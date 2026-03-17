@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import { LogOut, Wallet } from "lucide-react";
 
 import { signOut } from "@/app/(dashboard)/dashboard/actions";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { Button } from "@/components/ui/button";
 
@@ -36,28 +37,30 @@ export function AppShell({ children, user }: AppShellProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-right sm:block">
+            <div className="hidden rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-right md:block">
               <p className="text-sm font-medium text-slate-900">{userName}</p>
               <p className="text-xs text-slate-500">{user.email}</p>
             </div>
 
             <form action={signOut}>
-              <Button type="submit" variant="outline" size="sm">
+              <Button type="submit" variant="outline" size="sm" className="shrink-0">
                 <LogOut className="h-4 w-4" />
-                Esci
+                <span className="hidden sm:inline">Esci</span>
               </Button>
             </form>
           </div>
         </div>
       </header>
 
-      <div className="container flex gap-6 py-6">
+      <div className="container flex gap-6 py-6 pb-24 lg:pb-6">
         <aside className="hidden w-64 shrink-0 lg:block">
           <SidebarNav />
         </aside>
 
         <main className="min-w-0 flex-1">{children}</main>
       </div>
+
+      <MobileBottomNav />
     </div>
   );
 }

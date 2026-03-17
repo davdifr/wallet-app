@@ -36,19 +36,19 @@ export function MonthlyOverviewCard({
   return (
     <DashboardShellCard
       title="Riepilogo Mese"
-      subtitle="Snapshot veloce del wallet personale"
-      className="overflow-hidden bg-slate-950 text-white"
-      contentClassName="space-y-6"
+      subtitle="Visione rapida del mese in corso"
+      className="overflow-hidden bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 text-white"
+      contentClassName="space-y-4 sm:space-y-6"
     >
-      <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="space-y-5">
+      <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-5">
+        <div className="space-y-4 sm:space-y-5">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-slate-200">
             <Wallet2 className="h-3.5 w-3.5" />
             Personal wallet
           </div>
           <div>
             <p className="text-sm text-slate-300">Saldo disponibile</p>
-            <p className="mt-2 font-display text-5xl font-semibold tracking-tight">
+            <p className="mt-2 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
               {balance}
             </p>
           </div>
@@ -68,7 +68,7 @@ export function MonthlyOverviewCard({
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-white/10 bg-white/8 p-5">
+        <div className="hidden rounded-[2rem] border border-white/10 bg-white/8 p-5 lg:block">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-300">Andamento 7 giorni</p>

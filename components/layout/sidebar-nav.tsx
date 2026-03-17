@@ -12,15 +12,25 @@ import {
 
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
-  { href: "/transactions", label: "Transazioni", icon: ArrowRightLeft },
-  { href: "/recurring-incomes", label: "Recurring Incomes", icon: Repeat },
-  { href: "/saving-goals", label: "Saving Goals", icon: Target },
-  { href: "/groups", label: "Group Expenses", icon: Users }
+export const navItems = [
+  { href: "/dashboard", label: "Dashboard", mobileLabel: "Home", icon: LayoutGrid },
+  {
+    href: "/transactions",
+    label: "Transazioni",
+    mobileLabel: "Movimenti",
+    icon: ArrowRightLeft
+  },
+  {
+    href: "/recurring-incomes",
+    label: "Recurring Incomes",
+    mobileLabel: "Entrate",
+    icon: Repeat
+  },
+  { href: "/saving-goals", label: "Saving Goals", mobileLabel: "Goals", icon: Target },
+  { href: "/groups", label: "Group Expenses", mobileLabel: "Gruppi", icon: Users }
 ] as const;
 
-function isActivePath(pathname: string, href: string) {
+export function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

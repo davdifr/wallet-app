@@ -1,5 +1,4 @@
 import { DailyBudgetCard } from "@/components/dashboard/daily-budget-card";
-import { MonthlyBreakdownCard } from "@/components/dashboard/monthly-breakdown-card";
 import { MonthlyOverviewCard } from "@/components/dashboard/monthly-overview-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { SavingGoalsStatusCard } from "@/components/dashboard/saving-goals-status-card";
@@ -14,21 +13,13 @@ export default async function DashboardPage() {
 
     return (
       <div className="space-y-5 pb-3 sm:space-y-6">
-        <section className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
-          <MonthlyOverviewCard
-            balance={data.balanceLabel}
-            income={data.incomeLabel}
-            expenses={data.expensesLabel}
-            savingsRate={data.savingsRateLabel}
-            trend={data.trend}
-          />
-          <MonthlyBreakdownCard
-            balance={data.balanceLabel}
-            expenses={data.expensesLabel}
-            incomes={data.incomeLabel}
-            savingsTarget={data.savingsTargetLabel}
-          />
-        </section>
+        <MonthlyOverviewCard
+          balance={data.balanceLabel}
+          income={data.incomeLabel}
+          expenses={data.expensesLabel}
+          savingsRate={data.savingsRateLabel}
+          trend={data.trend}
+        />
 
         <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <DailyBudgetCard input={data.dailyBudgetInput} />
