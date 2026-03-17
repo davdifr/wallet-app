@@ -1,9 +1,12 @@
 "use client";
 
 import { startTransition, useState } from "react";
+import { Plus } from "lucide-react";
 
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { TransactionsList } from "@/components/transactions/transactions-list";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import type {
   Transaction,
   TransactionFilters,
@@ -102,6 +105,7 @@ export function TransactionsWorkspace({
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(
     initialEditingTransaction
   );
+  const [isComposerOpen, setIsComposerOpen] = useState(Boolean(initialEditingTransaction));
   const [listError, setListError] = useState<string | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -217,6 +221,7 @@ export function TransactionsWorkspace({
       });
 
       setEditingTransaction(null);
+      setIsComposerOpen(false);
 
       startTransition(() => {
         void refreshTransactions(filters);
@@ -285,14 +290,28 @@ export function TransactionsWorkspace({
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-slate-950">
-            Entrate e spese
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-600 sm:text-base">
-            Gestisci le transazioni del wallet con aggiornamenti immediati, filtri fluidi
-            e sincronizzazione in background.
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-semibold text-slate-950">
+              Entrate e spese
+            </h1>
+            <p className="mt-2 max-w-3xl text-sm text-slate-600 sm:text-base">
+              Gestisci le transazioni del wallet con aggiornamenti immediati, filtri fluidi
+              e sincronizzazione in background.
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            onClick={() => {
+              setEditingTransaction(null);
+              setIsComposerOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Nuovo movimento
+          </Button>
         </div>
       </section>
 
@@ -302,29 +321,7 @@ export function TransactionsWorkspace({
         </div>
       ) : null}
 
-      <section className="grid items-start gap-6 xl:grid-cols-[0.95fr_1.25fr]">
-        <div className="self-start rounded-3xl border border-white/70 bg-white/85 shadow-soft backdrop-blur">
-          <div className="border-b border-slate-100 px-6 py-6">
-            <h2 className="font-display text-2xl text-slate-950">
-              {editingTransaction ? "Modifica transazione" : "Nuova transazione"}
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              {editingTransaction
-                ? "Aggiorna i dati: la lista si allinea subito."
-                : "Inserisci un movimento di entrata o uscita."}
-            </p>
-          </div>
-          <div className="px-6 py-6">
-            <TransactionForm
-              categories={categories}
-              initialValues={editingTransaction}
-              isSubmitting={isSubmitting}
-              onCancelEdit={() => setEditingTransaction(null)}
-              onSubmit={handleSubmit}
-            />
-          </div>
-        </div>
-
+      <section>
         <TransactionsList
           availableMonths={availableMonths}
           categories={categories}
@@ -338,9 +335,39 @@ export function TransactionsWorkspace({
           onDelete={(transactionId) => {
             void handleDelete(transactionId);
           }}
-          onEdit={(transaction) => setEditingTransaction(transaction)}
+          onEdit={(transaction) => {
+            setEditingTransaction(transaction);
+            setIsComposerOpen(true);
+          }}
         />
       </section>
+
+      <Modal
+        open={isComposerOpen}
+        onOpenChange={(open) => {
+          setIsComposerOpen(open);
+          if (!open) {
+            setEditingTransaction(null);
+          }
+        }}
+        title={editingTransaction ? "Modifica transazione" : "Nuova transazione"}
+        description={
+          editingTransaction
+            ? "Aggiorna i dati del movimento e la lista si allinea subito."
+            : "Inserisci un nuovo movimento di entrata o uscita."
+        }
+      >
+        <TransactionForm
+          categories={categories}
+          initialValues={editingTransaction}
+          isSubmitting={isSubmitting}
+          onCancelEdit={() => {
+            setEditingTransaction(null);
+            setIsComposerOpen(false);
+          }}
+          onSubmit={handleSubmit}
+        />
+      </Modal>
     </div>
   );
 }

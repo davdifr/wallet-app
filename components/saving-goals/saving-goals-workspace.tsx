@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Target } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 
 import { SavingGoalForm } from "@/components/saving-goals/saving-goal-form";
 import { SavingGoalsGrid } from "@/components/saving-goals/saving-goals-grid";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 import type {
   GoalContributionFormState,
   SavingGoal,
@@ -33,6 +35,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
   const [isSubmittingGoal, setIsSubmittingGoal] = useState(false);
   const [submittingContributionGoalId, setSubmittingContributionGoalId] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   async function handleCreateGoal(
     values: SavingGoalFormValues
@@ -53,6 +56,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
 
       const data = await readResponse<{ goal: SavingGoal }>(response);
       setGoals((current) => [data.goal, ...current]);
+      setIsCreateModalOpen(false);
 
       return {
         success: true,
@@ -109,17 +113,26 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <Badge variant="secondary" className="w-fit bg-white/80 text-slate-700">
-          Saving Goals
-        </Badge>
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-slate-950">
-            Obiettivi di risparmio
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
-            Crea goal con target e scadenza, monitora il progresso e aggiungi
-            contributi manuali con aggiornamento immediato.
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Badge variant="secondary" className="w-fit bg-white/80 text-slate-700">
+              Saving Goals
+            </Badge>
+            <div className="mt-3">
+              <h1 className="font-display text-3xl font-semibold text-slate-950">
+                Obiettivi di risparmio
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+                Crea goal con target e scadenza, monitora il progresso e aggiungi
+                contributi manuali con aggiornamento immediato.
+              </p>
+            </div>
+          </div>
+
+          <Button type="button" className="w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Nuovo goal
+          </Button>
         </div>
       </section>
 
@@ -129,28 +142,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
         </div>
       ) : null}
 
-      <section className="grid items-start gap-6 xl:grid-cols-[0.95fr_1.25fr]">
-        <Card className="self-start border-white/70 bg-white/85 shadow-soft backdrop-blur">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-slate-950 p-2 text-white">
-                <Target className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle className="font-display text-2xl text-slate-950">
-                  Nuovo goal
-                </CardTitle>
-                <p className="text-sm text-slate-500">
-                  Definisci priorita, target e data obiettivo.
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <SavingGoalForm isSubmitting={isSubmittingGoal} onSubmit={handleCreateGoal} />
-          </CardContent>
-        </Card>
-
+      <section>
         <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -176,6 +168,15 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
           </CardContent>
         </Card>
       </section>
+
+      <Modal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        title="Nuovo saving goal"
+        description="Definisci priorita, target e data obiettivo per il prossimo traguardo."
+      >
+        <SavingGoalForm isSubmitting={isSubmittingGoal} onSubmit={handleCreateGoal} />
+      </Modal>
     </div>
   );
 }

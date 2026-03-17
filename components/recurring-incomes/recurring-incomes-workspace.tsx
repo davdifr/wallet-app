@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCcw, Repeat } from "lucide-react";
+import { Plus, RefreshCcw } from "lucide-react";
 
 import { RecurringIncomeForm } from "@/components/recurring-incomes/recurring-income-form";
 import { RecurringIncomesList } from "@/components/recurring-incomes/recurring-incomes-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 import type {
   MaterializeRecurringIncomesResult,
   RecurringIncome,
@@ -52,6 +52,7 @@ export function RecurringIncomesWorkspace({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isMaterializing, setIsMaterializing] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [pageMessage, setPageMessage] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
 
@@ -89,6 +90,7 @@ export function RecurringIncomesWorkspace({
       setRecurringIncomes((current) =>
         sortRecurringIncomes([data.recurringIncome, ...current])
       );
+      setIsCreateModalOpen(false);
 
       return {
         success: true,
@@ -191,10 +193,21 @@ export function RecurringIncomesWorkspace({
           </div>
         </div>
 
-        <Button type="button" className="w-full sm:w-auto" onClick={() => void handleMaterialize()}>
-          <RefreshCcw className="h-4 w-4" />
-          {isMaterializing ? "Sincronizzo..." : "Sincronizza ora"}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => void handleMaterialize()}
+          >
+            <RefreshCcw className="h-4 w-4" />
+            {isMaterializing ? "Sincronizzo..." : "Sincronizza ora"}
+          </Button>
+          <Button type="button" className="w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Nuova entrata
+          </Button>
+        </div>
       </section>
 
       {pageError ? (
@@ -209,28 +222,7 @@ export function RecurringIncomesWorkspace({
         </div>
       ) : null}
 
-      <section className="grid items-start gap-6 xl:grid-cols-[0.95fr_1.25fr]">
-        <Card className="self-start border-white/70 bg-white/85 shadow-soft backdrop-blur">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-slate-950 p-2 text-white">
-                <Repeat className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle className="font-display text-2xl text-slate-950">
-                  Nuova ricorrenza
-                </CardTitle>
-                <p className="text-sm text-slate-500">
-                  Crea una fonte di income ricorrente e tienila sincronizzata.
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <RecurringIncomeForm isSubmitting={isSubmitting} onSubmit={handleSubmit} />
-          </CardContent>
-        </Card>
-
+      <section>
         <RecurringIncomesList
           recurringIncomes={recurringIncomes}
           loadingId={loadingId}
@@ -239,6 +231,15 @@ export function RecurringIncomesWorkspace({
           }}
         />
       </section>
+
+      <Modal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        title="Nuova entrata ricorrente"
+        description="Configura una ricorrenza settimanale, mensile o annuale sincronizzata con le transazioni."
+      >
+        <RecurringIncomeForm isSubmitting={isSubmitting} onSubmit={handleSubmit} />
+      </Modal>
     </div>
   );
 }
