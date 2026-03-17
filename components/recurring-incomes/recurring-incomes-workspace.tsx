@@ -1,0 +1,244 @@
+"use client";
+
+import { useState } from "react";
+import { RefreshCcw, Repeat } from "lucide-react";
+
+import { RecurringIncomeForm } from "@/components/recurring-incomes/recurring-income-form";
+import { RecurringIncomesList } from "@/components/recurring-incomes/recurring-incomes-list";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type {
+  MaterializeRecurringIncomesResult,
+  RecurringIncome,
+  RecurringIncomeFormState,
+  RecurringIncomeFormValues
+} from "@/types/recurring-incomes";
+
+type RecurringIncomesWorkspaceProps = {
+  initialRecurringIncomes: RecurringIncome[];
+};
+
+function sortRecurringIncomes(items: RecurringIncome[]) {
+  return [...items].sort((left, right) => {
+    if (left.isActive !== right.isActive) {
+      return left.isActive ? -1 : 1;
+    }
+
+    if (left.nextOccurrenceOn !== right.nextOccurrenceOn) {
+      return left.nextOccurrenceOn.localeCompare(right.nextOccurrenceOn);
+    }
+
+    return right.createdAt.localeCompare(left.createdAt);
+  });
+}
+
+async function readResponse<T>(response: Response): Promise<T> {
+  const data = (await response.json()) as T & { message?: string };
+
+  if (!response.ok) {
+    throw new Error(data.message ?? "Richiesta non riuscita.");
+  }
+
+  return data;
+}
+
+export function RecurringIncomesWorkspace({
+  initialRecurringIncomes
+}: RecurringIncomesWorkspaceProps) {
+  const [recurringIncomes, setRecurringIncomes] = useState(
+    sortRecurringIncomes(initialRecurringIncomes)
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [isMaterializing, setIsMaterializing] = useState(false);
+  const [pageMessage, setPageMessage] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
+
+  async function reloadRecurringIncomes() {
+    const response = await fetch("/api/recurring-incomes", {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+      cache: "no-store"
+    });
+
+    const data = await readResponse<{ recurringIncomes: RecurringIncome[] }>(response);
+    setRecurringIncomes(sortRecurringIncomes(data.recurringIncomes));
+  }
+
+  async function handleSubmit(
+    values: RecurringIncomeFormValues
+  ): Promise<RecurringIncomeFormState> {
+    setIsSubmitting(true);
+    setPageError(null);
+    setPageMessage(null);
+
+    try {
+      const response = await fetch("/api/recurring-incomes", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify(values)
+      });
+
+      const data = await readResponse<{ recurringIncome: RecurringIncome }>(response);
+      setRecurringIncomes((current) =>
+        sortRecurringIncomes([data.recurringIncome, ...current])
+      );
+
+      return {
+        success: true,
+        message: "Entrata ricorrente creata."
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Impossibile creare l'entrata ricorrente."
+      };
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleToggle(id: string, isActive: boolean) {
+    const previous = recurringIncomes;
+    setLoadingId(id);
+    setPageError(null);
+    setPageMessage(null);
+    setRecurringIncomes((current) =>
+      sortRecurringIncomes(
+        current.map((item) => (item.id === id ? { ...item, isActive } : item))
+      )
+    );
+
+    try {
+      const response = await fetch(`/api/recurring-incomes/${id}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify({ isActive })
+      });
+
+      const data = await readResponse<{ recurringIncome: RecurringIncome }>(response);
+      setRecurringIncomes((current) =>
+        sortRecurringIncomes(
+          current.map((item) => (item.id === id ? data.recurringIncome : item))
+        )
+      );
+    } catch (error) {
+      setRecurringIncomes(previous);
+      setPageError(
+        error instanceof Error ? error.message : "Impossibile aggiornare la ricorrenza."
+      );
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
+  async function handleMaterialize() {
+    setIsMaterializing(true);
+    setPageError(null);
+    setPageMessage(null);
+
+    try {
+      const response = await fetch("/api/recurring-incomes/materialize", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      });
+
+      const data = await readResponse<{ result: MaterializeRecurringIncomesResult }>(response);
+      await reloadRecurringIncomes();
+      setPageMessage(
+        `${data.result.createdTransactions} occorrenze create, ${data.result.skippedDuplicates} duplicati ignorati.`
+      );
+    } catch (error) {
+      setPageError(
+        error instanceof Error
+          ? error.message
+          : "Impossibile sincronizzare le ricorrenze."
+      );
+    } finally {
+      setIsMaterializing(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-3">
+          <Badge variant="secondary" className="w-fit bg-white/80 text-slate-700">
+            Recurring Incomes
+          </Badge>
+          <div>
+            <h1 className="font-display text-3xl font-semibold text-slate-950">
+              Entrate ricorrenti
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+              Crea entrate settimanali, mensili o annuali e materializza le occorrenze
+              mancanti nelle transazioni senza duplicati.
+            </p>
+          </div>
+        </div>
+
+        <Button type="button" className="w-full sm:w-auto" onClick={() => void handleMaterialize()}>
+          <RefreshCcw className="h-4 w-4" />
+          {isMaterializing ? "Sincronizzo..." : "Sincronizza ora"}
+        </Button>
+      </section>
+
+      {pageError ? (
+        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          {pageError}
+        </div>
+      ) : null}
+
+      {pageMessage ? (
+        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+          {pageMessage}
+        </div>
+      ) : null}
+
+      <section className="grid items-start gap-6 xl:grid-cols-[0.95fr_1.25fr]">
+        <Card className="self-start border-white/70 bg-white/85 shadow-soft backdrop-blur">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-slate-950 p-2 text-white">
+                <Repeat className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="font-display text-2xl text-slate-950">
+                  Nuova ricorrenza
+                </CardTitle>
+                <p className="text-sm text-slate-500">
+                  Crea una fonte di income ricorrente e tienila sincronizzata.
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <RecurringIncomeForm isSubmitting={isSubmitting} onSubmit={handleSubmit} />
+          </CardContent>
+        </Card>
+
+        <RecurringIncomesList
+          recurringIncomes={recurringIncomes}
+          loadingId={loadingId}
+          onToggle={(id, isActive) => {
+            void handleToggle(id, isActive);
+          }}
+        />
+      </section>
+    </div>
+  );
+}
