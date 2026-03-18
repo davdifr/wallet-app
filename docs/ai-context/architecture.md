@@ -14,9 +14,10 @@ Il pattern dominante e:
 
 1. una pagina server recupera dati iniziali dai service;
 2. passa i dati a un workspace client;
-3. il workspace usa modali e form per le mutazioni;
-4. le mutazioni vanno a `/api/...` o Server Actions;
-5. i service incapsulano la logica verso Supabase.
+3. il workspace usa TanStack Query per cache, refetch e invalidazione;
+4. il workspace usa modali e form per le mutazioni;
+5. le mutazioni vanno a `/api/...` o Server Actions residue;
+6. i service incapsulano la logica verso Supabase.
 
 ## Routing
 
@@ -34,6 +35,7 @@ Il pattern dominante e:
 - `/recurring-incomes`
 - `/saving-goals`
 - `/groups`
+- `/groups/[groupId]`
 
 ## Layer UI
 
@@ -55,10 +57,12 @@ Ogni dominio principale ha un workspace client che gestisce:
 
 I workspace sono:
 
+- `DashboardWorkspace`
 - `TransactionsWorkspace`
 - `SavingGoalsWorkspace`
 - `RecurringIncomesWorkspace`
 - `GroupsWorkspace`
+- `GroupDetailWorkspace`
 
 ## Layer servizi
 
@@ -98,7 +102,21 @@ Questo doppio layer `page server-side + workspace client + API` rende l'app:
 
 - veloce al first paint grazie al rendering server-side;
 - interattiva nelle mutazioni client;
+- piu consistente tra pagine e tab grazie a query cache condivisa;
 - semplice da estendere con consumer esterni o agenti AI che operano via HTTP interno.
+
+## Stato client e caching
+
+L'app non usa uno store globale custom per i dati server. Usa invece un approccio server-state:
+
+- `DashboardQueryProvider` nel layout dashboard;
+- TanStack Query per cache per dominio;
+- chiavi centralizzate in `lib/query/query-keys.ts`;
+- invalidazione coordinata dopo mutazioni;
+- sync cross-tab via `BroadcastChannel` con fallback `storage`;
+- prefetch di route e dati nelle tab principali.
+
+Questo e oggi il pattern preferito per nuove feature interattive.
 
 ## Supabase integration
 
@@ -151,11 +169,12 @@ I moduli in `lib/` contengono logica pura riutilizzabile e testabile.
 I workspace client usano uno stile pragmatico:
 
 - `useState` per stato locale;
-- `fetch` diretto verso API interne;
-- `startTransition` in alcuni casi per refresh non bloccanti;
-- ottimismo locale selettivo nelle transazioni e nei toggle.
+- TanStack Query per fetch, cache e refetch;
+- `fetch` verso API interne tramite helper condiviso;
+- invalidazione per dominio e update locale selettivo dopo mutazioni;
+- ottimismo locale leggero dove utile.
 
-Non c'e una state library globale dedicata. Questo mantiene il progetto semplice, ma puo diventare un punto di refactoring se la complessita UI cresce.
+Non c'e una state library globale classica per tutti gli stati. La parte condivisa riguarda soprattutto il server state.
 
 ## Convenzioni osservate
 

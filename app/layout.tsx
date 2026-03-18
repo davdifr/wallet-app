@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import type { ReactNode } from "react";
 
@@ -17,8 +17,25 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  applicationName: "Wallet App",
   title: "Wallet App",
-  description: "Full-stack wallet dashboard with Next.js and Supabase"
+  description: "Dashboard personale per budget, entrate, obiettivi e gruppi",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Wallet App"
+  },
+  formatDetection: {
+    telephone: false
+  }
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f8fafc"
 };
 
 export default function RootLayout({

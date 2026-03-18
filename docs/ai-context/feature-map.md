@@ -50,8 +50,10 @@
 
 - Il grafico trend considera solo spese degli ultimi 7 giorni.
 - Il widget daily budget usa `expectedMonthlyIncome = income registrato + recurring income proiettato`.
+- Il riepilogo alto e stato allineato alla stessa logica prevista del budget giornaliero.
 - La card saving goals usa `calculateSavingGoalMetrics` per progress, reachability e importo residuo.
 - La dashboard attuale e read-only: non esiste ancora un editor UI per `monthly_budget_settings`.
+- La dashboard ha una route API dedicata `/api/dashboard` e usa query cache per migliorare la navigazione tra tab.
 
 ## 3. Transazioni
 
@@ -62,7 +64,7 @@
 - Eliminazione transazione.
 - Filtri per mese, categoria e tipo.
 - Supporto a entrate e uscite.
-- Aggiornamento client con ottimismo locale e refresh finale da API.
+- Aggiornamento client con query cache, invalidazione dashboard e refetch coerente dei filtri.
 
 ### Dati gestiti
 
@@ -93,7 +95,8 @@
 
 - Creazione ricorrenza.
 - Attivazione/disattivazione.
-- Materializzazione manuale delle occorrenze mancanti in transazioni reali.
+- Eliminazione della definizione di ricorrenza senza cancellare retroattivamente le transazioni gia materializzate.
+- Materializzazione on-demand delle occorrenze mancanti in transazioni reali durante letture strategiche.
 - Prevenzione duplicati tramite chiave univoca per occorrenza.
 
 ### Frequenze supportate oggi dalla UI
@@ -120,8 +123,8 @@
 
 ### Note utili
 
-- Il pulsante "Sincronizza ora" e il trigger manuale corrente.
-- Non esiste ancora un job schedulato interno al repository: la sincronizzazione e on-demand.
+- Non esiste piu un pulsante manuale di sync in UI.
+- Non esiste ancora un job schedulato interno al repository: la sincronizzazione resta on-demand lato server.
 - Le transazioni create hanno note automatiche che indicano l'origine ricorrente.
 
 ## 5. Saving Goals
@@ -131,6 +134,7 @@
 - Creazione di un goal con titolo, target, data obiettivo e priorita.
 - Elenco goal con card dettagliate.
 - Aggiunta di contributi manuali.
+- Eliminazione goal.
 - Aggiornamento automatico di `saved_so_far`.
 - Passaggio automatico a `completed` quando il target viene raggiunto o superato.
 
@@ -153,7 +157,7 @@
 ### Vincoli attuali
 
 - Il form richiede obbligatoriamente una `targetDate`, anche se il database la supporta nullable.
-- Non esistono ancora edit, pause, cancel o delete da UI per i goal, nonostante il DB supporti piu stati.
+- Non esistono ancora edit, pause o cancel da UI, anche se il DB supporta piu stati.
 - I contributi non generano automaticamente una transazione collegata, anche se lo schema `goal_contributions` prevede `transaction_id`.
 
 ## 6. Spese di gruppo
@@ -163,11 +167,14 @@
 - Creazione gruppo.
 - Inserimento automatico del proprietario come membro owner tramite trigger DB.
 - Aggiunta membri come utenti registrati o guest.
+- Ricerca utenti registrati con suggerimenti e directory sicura.
 - Creazione spesa condivisa.
 - Split `equal` o `custom`.
 - Calcolo saldi netti di gruppo.
 - Registrazione rimborsi su singola quota.
 - Workflow di accettazione settlement quando necessario.
+- Rimozione partecipanti da parte dell'owner con controlli di sicurezza.
+- Eliminazione del gruppo anche in presenza di storico, con cleanup ordinato delle dipendenze lato service.
 - Sincronizzazione delle spese e dei rimborsi nel ledger `transactions`.
 
 ### Modello concettuale
@@ -183,6 +190,7 @@
 - Un membro guest puo esistere senza `user_id`.
 - Una spesa puo essere pagata anche da un guest tramite `paid_by_member_id`.
 - I settlement che coinvolgono guest vengono completati subito, senza attesa di accettazione da parte di un account applicativo.
+- I profili applicativi dei membri registrati vengono arricchiti con nome, email e avatar dalla directory utenti.
 
 ### Split disponibili oggi
 
@@ -214,9 +222,14 @@
 
 ### Limiti e note
 
-- Non ci sono ancora edit/delete per gruppi, spese o settlement.
+- Non ci sono ancora edit/delete per shared expenses o settlement.
 - La UI non espone ruoli avanzati oltre all'owner creato automaticamente.
-- Non esiste ancora invito via email reale: l'aggiunta di utenti registrati avviene cercandoli nella tabella `users`.
+- Non esiste ancora invito via email reale: l'aggiunta di utenti registrati avviene cercandoli nella directory utenti applicativa.
+
+### Routing gruppi
+
+- `/groups` mostra solo l'elenco gruppi.
+- `/groups/[groupId]` contiene dettagli, membri, spese, saldi e azioni del singolo gruppo.
 
 ## 7. API interne
 
@@ -224,6 +237,7 @@
 
 Esiste un set completo di route REST JSON parallelo alle Server Actions. Le API coprono:
 
+- dashboard;
 - transazioni;
 - recurring incomes;
 - saving goals;

@@ -36,7 +36,8 @@ L'app e pensata come base full-stack pronta a crescere, non come MVP puramente s
 - Pagina iniziale `/` che redirige automaticamente a `/dashboard` o `/login`.
 - Login con Google OAuth via Supabase.
 - Shell autenticata con header, sidebar desktop e bottom navigation mobile.
-- Ogni sezione dashboard usa fetching server-side iniziale e, quando serve, aggiornamenti client via `fetch` verso `/api/...`.
+- Ogni sezione dashboard usa fetching server-side iniziale e poi aggiornamenti client via `fetch` verso `/api/...` orchestrati da TanStack Query.
+- La navigazione tra tab principali viene preriscaldata con prefetch di route e dati per ridurre i caricamenti percepiti.
 - UI in italiano, con naming tecnico talvolta misto inglese/italiano.
 
 ## Flussi principali
@@ -51,15 +52,16 @@ L'app e pensata come base full-stack pronta a crescere, non come MVP puramente s
 ### Gestione dati
 
 1. Le pagine server leggono dati dai service layer.
-2. I componenti client interattivi usano le API interne `/api/...` per create/update/toggle.
-3. I service layer parlano con Supabase e incapsulano mapping tra righe database e tipi frontend.
-4. Le validazioni avvengono con Zod prima di arrivare alla logica di dominio.
+2. I componenti client interattivi usano le API interne `/api/...` per create/update/toggle/delete.
+3. TanStack Query gestisce cache, refetch, invalidazione e sincronizzazione cross-tab dei dati principali.
+4. I service layer parlano con Supabase e incapsulano mapping tra righe database e tipi frontend.
+5. Le validazioni avvengono con Zod prima di arrivare alla logica di dominio.
 
 ### Dashboard
 
-1. Legge transazioni del mese corrente.
-2. Legge ricorrenze attive con occorrenze entro fine mese per stimare entrate future.
-3. Legge budget mensile e saving goals.
+1. La page server legge i dati iniziali dal service e passa il payload serializzato al workspace client.
+2. Il workspace client usa la query `dashboard` contro `/api/dashboard` per mantenere la vista calda e riallineata.
+3. La dashboard legge transazioni del mese corrente, ricorrenze attive entro fine mese, budget mensile e saving goals.
 4. Calcola KPI aggregati e segnali di budget.
 
 ## Stato di maturita percepito

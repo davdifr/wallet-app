@@ -49,6 +49,7 @@ Note:
 
 - viene upsertata automaticamente da `ensureUserProfile`.
 - molti record applicativi referenziano `public.users`, quindi questa tabella e parte strutturale dell'app.
+- la lettura cross-user non avviene direttamente dalla UI per via delle policy RLS; per i gruppi si usano funzioni SQL dedicate di directory utenti.
 
 ## Finanza personale
 
@@ -108,6 +109,7 @@ Osservazioni:
 
 - la UI usa solo frequenze settimanali, mensili e annuali.
 - `next_occurrence_on` e il cursore operativo per la sincronizzazione.
+- la delete della ricorrenza rimuove la definizione ma non cancella le transazioni gia materializzate.
 
 ### `monthly_budget_settings`
 
@@ -174,6 +176,7 @@ Osservazioni:
 
 - attualmente `transaction_id` non viene valorizzato dal codice applicativo.
 - il totale del goal viene mantenuto aggiornando `saving_goals.saved_so_far`.
+- l'eliminazione di un goal deve considerare le contribution collegate; il codice applicativo oggi mantiene la coerenza tramite delete orchestrata dal service.
 
 ## Gruppi e spese condivise
 
@@ -214,6 +217,7 @@ Osservazioni:
 - supporta sia utenti reali dell'app sia ospiti senza account.
 - `group_id + user_id` e univoco.
 - esiste anche un indice univoco per `guest_email` per gruppo.
+- il `display_name` non e piu sufficiente per la UI dei membri registrati: il service arricchisce i dati con directory profili.
 
 ### `shared_expenses`
 
@@ -291,6 +295,7 @@ Osservazioni:
 
 - possono essere `pending` o `completed`.
 - il completamento aggiorna la quota collegata e genera transazioni collegate.
+- l'eliminazione di un gruppo passa da cleanup service-side per evitare orfani su membri, spese, split, settlement e transazioni collegate.
 
 ## Trigger e funzioni SQL
 
@@ -309,6 +314,14 @@ Osservazioni:
 ### `is_group_admin(check_group_id uuid)`
 
 - helper SQL per owner/admin.
+
+### `search_invitable_users(search_query text)`
+
+- funzione `security definer` per cercare utenti invitabili nella directory applicativa senza esporre lettura diretta completa su `public.users`.
+
+### `get_user_directory_profiles(user_ids uuid[])`
+
+- funzione `security definer` per arricchire i membri gruppo registrati con `email`, `full_name` e `avatar_url`.
 
 ## Policy RLS osservate
 
@@ -330,6 +343,11 @@ Nel materiale letto sono visibili soprattutto policy aggiunte o modificate per l
 
 - permesso a payer, payee, creator o group admin.
 
+### Users read
+
+- la lettura diretta di `public.users` resta limitata dalla RLS al proprio profilo;
+- per casi cross-user il codice applicativo dipende dalle funzioni SQL di directory.
+
 ## Indici rilevanti
 
 Alcuni indici particolarmente importanti per performance:
@@ -349,3 +367,4 @@ Alcuni indici particolarmente importanti per performance:
 - Il DB supporta piu casi d'uso di quelli esposti oggi dalla UI.
 - `types/database.ts` riflette lo stato attuale atteso dal codice applicativo e va tenuto coerente con SQL.
 - Le migrazioni SQL sono manuali, non appare un sistema automatizzato con timestamp migration files.
+- Se si applicano nuove feature sui gruppi, ricordare di allineare anche eventuali funzioni SQL in `supabase/user-directory.sql`.

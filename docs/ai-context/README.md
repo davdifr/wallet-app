@@ -24,6 +24,8 @@ Se devi passare contesto a un'altra AI, l'ordine consigliato e:
 
 - App web personale per gestione finanze con autenticazione Google via Supabase.
 - Frontend in Next.js App Router con React 19, TypeScript e Tailwind.
-- Backend applicativo principalmente server-side via Supabase SSR, Server Components, Server Actions e Route Handlers REST.
+- Backend applicativo principalmente server-side via Supabase SSR, Server Components e Route Handlers REST.
+- Stato client basato su TanStack Query con cache condivisa, invalidazione per dominio e sync cross-tab browser.
 - Domini principali: dashboard, transazioni, entrate ricorrenti, saving goals e spese di gruppo.
+- Navigazione dashboard ottimizzata con prefetch route + prefetch dati per una UX piu vicina a una PWA.
 - Database Postgres/Supabase gia modellato per funzionalita piu ampie di quelle attualmente esposte in UI.
