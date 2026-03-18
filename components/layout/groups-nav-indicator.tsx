@@ -1,14 +1,13 @@
 "use client";
 
-import { useGroupsUnreadSummary } from "@/components/layout/use-groups-unread-summary";
+import { useGroupsUnreadContext } from "@/components/layout/groups-unread-provider";
 
 type GroupsNavIndicatorProps = {
   mobile?: boolean;
 };
 
 export function GroupsNavIndicator({ mobile = false }: GroupsNavIndicatorProps) {
-  const unreadSummaryQuery = useGroupsUnreadSummary();
-  const hasUnreadGroups = unreadSummaryQuery.data?.hasUnreadGroups ?? false;
+  const { hasUnreadGroups } = useGroupsUnreadContext();
 
   if (!hasUnreadGroups) {
     return null;
