@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { DailyBudgetCard } from "@/components/dashboard/daily-budget-card";
-import { MonthlyOverviewCard } from "@/components/dashboard/monthly-overview-card";
 import { PiggyBankCard } from "@/components/dashboard/piggy-bank-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { SavingGoalsStatusCard } from "@/components/dashboard/saving-goals-status-card";
@@ -81,18 +80,6 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
 
   return (
     <div className="space-y-5 pb-12 sm:space-y-6">
-      <MonthlyOverviewCard
-        totalWealth={data.totalWealthLabel}
-        balance={data.balanceLabel}
-        spendableToday={data.spendableTodayLabel}
-        income={data.incomeLabel}
-        expenses={data.expensesLabel}
-        savingsRate={data.savingsRateLabel}
-        monthlyReserve={data.monthlyReserveLabel}
-        protectedGoals={data.protectedGoalsLabel}
-        trend={data.trend}
-      />
-
       <section>
         <DailyBudgetCard result={data.dailyBudget} totalWealth={data.totalWealthLabel} />
       </section>
