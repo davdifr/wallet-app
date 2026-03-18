@@ -20,8 +20,6 @@ export function useGroupsUnreadSummary() {
       }),
     staleTime: 15_000,
     refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchInterval: 15_000,
-    refetchIntervalInBackground: false
+    refetchOnWindowFocus: true
   });
 }

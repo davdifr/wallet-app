@@ -2,8 +2,12 @@
 
 import { useGroupExpensesRealtimeSync } from "@/components/groups/use-group-expenses-realtime-sync";
 
-export function GroupsRealtimeBridge() {
-  useGroupExpensesRealtimeSync();
+type GroupsRealtimeBridgeProps = {
+  currentUserId: string;
+};
+
+export function GroupsRealtimeBridge({ currentUserId }: GroupsRealtimeBridgeProps) {
+  useGroupExpensesRealtimeSync({ currentUserId });
 
   return null;
 }

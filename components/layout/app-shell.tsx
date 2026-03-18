@@ -23,7 +23,7 @@ export function AppShell({ children, user }: AppShellProps) {
 
   return (
     <div className="min-h-screen">
-      <GroupsRealtimeBridge />
+      <GroupsRealtimeBridge currentUserId={user.id} />
       <header className="safe-header sticky top-0 z-20 border-b border-white/70 bg-white/85 backdrop-blur">
         <div className="safe-container container flex h-16 items-center justify-between gap-4">
           <div className="flex items-center gap-3">
