@@ -59,6 +59,7 @@ export function GroupDetailWorkspace({
     null
   );
   const [pendingDeleteGroupId, setPendingDeleteGroupId] = useState<string | null>(null);
+  const [pendingRemoveMemberId, setPendingRemoveMemberId] = useState<string | null>(null);
   const [pendingSettleSplitId, setPendingSettleSplitId] = useState<string | null>(null);
   const [pendingAcceptSettlementId, setPendingAcceptSettlementId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -134,6 +135,35 @@ export function GroupDetailWorkspace({
       };
     } finally {
       setPendingCreateExpenseGroupId(null);
+    }
+  }
+
+  async function handleRemoveMember(memberId: string): Promise<GroupFormState> {
+    setPendingRemoveMemberId(memberId);
+    setPageError(null);
+    setPageMessage(null);
+
+    try {
+      const response = await fetch(`/api/groups/${group.group.id}/members/${memberId}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      });
+
+      await readResponse<{ success?: boolean }>(response);
+      await reloadGroup();
+      setPageMessage("Partecipante rimosso dal gruppo.");
+      return { success: true, message: "Partecipante rimosso." };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Impossibile rimuovere il partecipante.";
+      setPageError(message);
+      return {
+        success: false,
+        message
+      };
+    } finally {
+      setPendingRemoveMemberId(null);
     }
   }
 
@@ -300,10 +330,13 @@ export function GroupDetailWorkspace({
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-6">
           <GroupMembersSection
+            currentUserId={currentUserId}
             group={group}
             inviteCandidates={inviteCandidates}
             isSubmitting={pendingAddMemberGroupId === group.group.id}
+            removingMemberId={pendingRemoveMemberId}
             onAddMember={handleAddMember}
+            onRemoveMember={handleRemoveMember}
           />
 
           <div id="rimborsi-gruppo" className="scroll-mt-24">
@@ -331,7 +364,7 @@ export function GroupDetailWorkspace({
         open={isDeleteModalOpen}
         onOpenChange={setIsDeleteModalOpen}
         title="Conferma eliminazione"
-        description="Il gruppo verra eliminato solo se non contiene spese, rimborsi o transazioni collegate."
+        description="Il gruppo verra chiuso definitivamente: spese e rimborsi condivisi verranno rimossi, mentre le transazioni personali resteranno nel wallet senza collegamento al gruppo."
       >
         <div className="space-y-5">
           <div className="rounded-3xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm text-slate-600">

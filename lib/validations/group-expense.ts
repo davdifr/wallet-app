@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const groupIdSchema = z.string().uuid("Gruppo non valido.");
+export const groupMemberIdSchema = z.string().uuid("Membro non valido.");
 
 export const createGroupSchema = z.object({
   name: z.string().trim().min(2, "Il nome gruppo deve avere almeno 2 caratteri.").max(80),

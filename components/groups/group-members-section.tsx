@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { UserPlus, Users } from "lucide-react";
+import { Trash2, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 
 import { GroupMemberForm } from "@/components/groups/group-member-form";
@@ -62,19 +62,30 @@ function MemberAvatar({ name, avatarUrl }: MemberAvatarProps) {
 }
 
 type GroupMembersSectionProps = {
+  currentUserId: string | null;
   group: GroupDetails;
   inviteCandidates: UserInviteCandidate[];
   isSubmitting?: boolean;
+  removingMemberId?: string | null;
   onAddMember: (values: AddGroupMemberFormValues) => Promise<GroupFormState>;
+  onRemoveMember: (memberId: string) => Promise<GroupFormState>;
 };
 
 export function GroupMembersSection({
+  currentUserId,
   group,
   inviteCandidates,
   isSubmitting = false,
-  onAddMember
+  removingMemberId = null,
+  onAddMember,
+  onRemoveMember
 }: GroupMembersSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const currentUserMembership =
+    currentUserId === null
+      ? null
+      : group.group.members.find((member) => member.userId === currentUserId) ?? null;
+  const canManageMembers = currentUserMembership?.role === "owner";
 
   const availableCandidates = inviteCandidates.filter(
     (candidate) => !group.group.members.some((member) => member.userId === candidate.id)
@@ -117,13 +128,13 @@ export function GroupMembersSection({
         </CardHeader>
 
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="space-y-3">
             {group.group.members.map((member) => (
               <div
                 key={member.id}
                 className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <MemberAvatar
                     name={member.displayName || "Membro"}
                     avatarUrl={member.avatarUrl}
@@ -131,18 +142,34 @@ export function GroupMembersSection({
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate font-medium text-slate-950">{member.displayName}</p>
+                      <p className="text-base font-medium text-slate-950">{member.displayName}</p>
                       <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
                         {roleLabel[member.role]}
                       </span>
                     </div>
 
-                    <p className="mt-1 break-all text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-slate-500">
                       {member.isGuest
                         ? member.guestEmail || "Guest senza email"
                         : member.email || "Utente registrato"}
                     </p>
                   </div>
+
+                  {canManageMembers && member.role !== "owner" ? (
+                    <div className="sm:ml-auto">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:w-auto"
+                        disabled={removingMemberId === member.id}
+                        onClick={() => void onRemoveMember(member.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        {removingMemberId === member.id ? "Rimuovo..." : "Rimuovi"}
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}

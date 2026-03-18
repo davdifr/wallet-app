@@ -35,6 +35,7 @@ type SettlementRow = Database["public"]["Tables"]["settlements"]["Row"];
 type SettlementInsert = Database["public"]["Tables"]["settlements"]["Insert"];
 type SettlementUpdate = Database["public"]["Tables"]["settlements"]["Update"];
 type TransactionInsert = Database["public"]["Tables"]["transactions"]["Insert"];
+type TransactionUpdate = Database["public"]["Tables"]["transactions"]["Update"];
 
 class GroupExpensesServiceError extends Error {
   statusCode: number;
@@ -531,41 +532,20 @@ export async function deleteGroup(userId: string, groupId: string) {
   const group = await getOwnedGroup(userId, groupId);
   const supabase = await createSupabaseServerClient();
 
-  const [
-    { count: expensesCount, error: expensesError },
-    { count: settlementsCount, error: settlementsError },
-    { count: transactionsCount, error: transactionsError }
-  ] = await Promise.all([
-    supabase
-      .from("shared_expenses")
-      .select("id", { count: "exact", head: true })
-      .eq("group_id", groupId),
-    supabase
-      .from("settlements")
-      .select("id", { count: "exact", head: true })
-      .eq("group_id", groupId),
-    supabase
-      .from("transactions")
-      .select("id", { count: "exact", head: true })
-      .eq("group_id", groupId)
-  ]);
+  // Manteniamo le transazioni sincronizzate nel wallet personale, ma le sganciamo
+  // dal contesto gruppo prima della cancellazione a cascata dello storico condiviso.
+  const { error: transactionsUpdateError } = await supabase
+    .from("transactions")
+    .update({
+      group_id: null,
+      is_shared: false,
+      shared_expense_id: null,
+      settlement_id: null
+    } as TransactionUpdate as never)
+    .eq("group_id", groupId);
 
-  if (expensesError) throw new Error(expensesError.message);
-  if (settlementsError) throw new Error(settlementsError.message);
-  if (transactionsError) throw new Error(transactionsError.message);
-
-  if ((expensesCount ?? 0) > 0 || (settlementsCount ?? 0) > 0) {
-    throw new GroupExpensesServiceError(
-      "Non puoi eliminare un gruppo che contiene gia spese o rimborsi. Rimuovi prima i movimenti collegati.",
-      409
-    );
-  }
-
-  if ((transactionsCount ?? 0) > 0) {
-    throw new GroupExpensesServiceError(
-      "Non puoi eliminare il gruppo finche esistono transazioni collegate.",
-      409
-    );
+  if (transactionsUpdateError) {
+    throw new Error(transactionsUpdateError.message);
   }
 
   const { error } = await supabase.from("groups").delete().eq("id", groupId);
@@ -575,6 +555,94 @@ export async function deleteGroup(userId: string, groupId: string) {
   }
 
   return group;
+}
+
+export async function removeGroupMember(
+  actorUserId: string,
+  groupId: string,
+  memberId: string
+) {
+  await getOwnedGroup(actorUserId, groupId);
+  const supabase = await createSupabaseServerClient();
+
+  const { data: member, error: memberError } = await supabase
+    .from("group_members")
+    .select("*")
+    .eq("id", memberId)
+    .eq("group_id", groupId)
+    .single();
+
+  if (memberError) {
+    if (memberError.code === "PGRST116") {
+      throw new GroupExpensesServiceError("Membro non trovato.", 404);
+    }
+
+    throw new Error(memberError.message);
+  }
+
+  const memberRow = member as GroupMemberRow;
+
+  if (memberRow.role === "owner") {
+    throw new GroupExpensesServiceError(
+      "Non puoi rimuovere il proprietario del gruppo.",
+      409
+    );
+  }
+
+  const [
+    { count: paidExpensesCount, error: paidExpensesError },
+    { count: splitCount, error: splitError },
+    { count: settlementsCount, error: settlementsError }
+  ] = await Promise.all([
+    supabase
+      .from("shared_expenses")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId)
+      .eq("paid_by_member_id", memberId),
+    supabase
+      .from("shared_expense_splits")
+      .select("id", { count: "exact", head: true })
+      .eq("group_member_id", memberId),
+    supabase
+      .from("settlements")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId)
+      .or(`payer_member_id.eq.${memberId},payee_member_id.eq.${memberId}`)
+  ]);
+
+  if (paidExpensesError) throw new Error(paidExpensesError.message);
+  if (splitError) throw new Error(splitError.message);
+  if (settlementsError) throw new Error(settlementsError.message);
+
+  if ((paidExpensesCount ?? 0) > 0 || (splitCount ?? 0) > 0 || (settlementsCount ?? 0) > 0) {
+    throw new GroupExpensesServiceError(
+      "Puoi rimuovere solo partecipanti senza spese, quote o rimborsi gia registrati.",
+      409
+    );
+  }
+
+  const { error } = await supabase
+    .from("group_members")
+    .delete()
+    .eq("id", memberId)
+    .eq("group_id", groupId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapGroupMember({
+    id: memberRow.id,
+    group_id: memberRow.group_id,
+    user_id: memberRow.user_id,
+    display_name: memberRow.display_name,
+    email: null,
+    avatar_url: null,
+    guest_email: memberRow.guest_email,
+    is_guest: memberRow.is_guest,
+    role: memberRow.role,
+    joined_at: memberRow.joined_at
+  });
 }
 
 export async function addGroupMember(values: AddGroupMemberFormValues) {
