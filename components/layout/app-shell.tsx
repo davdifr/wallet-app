@@ -22,8 +22,8 @@ export function AppShell({ children, user }: AppShellProps) {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-white/70 bg-white/80 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between gap-4">
+      <header className="safe-header sticky top-0 z-20 border-b border-white/70 bg-white/85 backdrop-blur">
+        <div className="safe-container container flex h-16 items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="rounded-2xl bg-slate-950 p-2 text-white shadow-soft">
               <Wallet className="h-5 w-5" />
@@ -52,7 +52,7 @@ export function AppShell({ children, user }: AppShellProps) {
         </div>
       </header>
 
-      <div className="container flex gap-6 py-6 pb-32 lg:pb-6">
+      <div className="safe-container safe-mobile-content container flex gap-6 py-6">
         <aside className="hidden w-64 shrink-0 lg:block">
           <SidebarNav />
         </aside>

@@ -15,7 +15,7 @@ export function MobileBottomNav() {
   const queryClient = useQueryClient();
 
   return (
-    <nav className="fixed inset-x-2 bottom-2 z-30 rounded-[1.35rem] border border-white/80 bg-white/95 p-1 shadow-soft backdrop-blur lg:hidden">
+    <nav className="safe-bottom-nav fixed z-30 rounded-[1.35rem] border border-white/80 bg-white/95 p-1 shadow-soft backdrop-blur lg:hidden">
       <ul className="grid grid-cols-5 gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
