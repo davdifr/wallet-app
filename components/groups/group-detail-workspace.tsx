@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
+import { useGroupExpensesRealtimeSync } from "@/components/groups/use-group-expenses-realtime-sync";
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { GroupExpensesSection } from "@/components/groups/group-expenses-section";
 import { GroupMembersSection } from "@/components/groups/group-members-section";
@@ -31,6 +32,8 @@ type GroupApiResponse = {
   group: GroupDetails;
   inviteCandidates: UserInviteCandidate[];
 };
+
+const GROUPS_COLLABORATIVE_STALE_TIME = 15_000;
 
 type GroupDetailWorkspaceProps = {
   currentUserId: string | null;
@@ -67,6 +70,8 @@ export function GroupDetailWorkspace({
     [initialCurrentUserId, initialGroup, initialInviteCandidates]
   );
 
+  useGroupExpensesRealtimeSync({ groupId: initialGroup.group.id });
+
   const groupQuery = useQuery({
     queryKey: queryKeys.groups.detail(initialGroup.group.id),
     queryFn: () =>
@@ -75,7 +80,10 @@ export function GroupDetailWorkspace({
         credentials: "same-origin",
         cache: "no-store"
       }),
-    initialData
+    initialData,
+    staleTime: GROUPS_COLLABORATIVE_STALE_TIME,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true
   });
 
   const groupData = groupQuery.data ?? initialData;

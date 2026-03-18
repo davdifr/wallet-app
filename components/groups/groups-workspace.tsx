@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
+import { useGroupExpensesRealtimeSync } from "@/components/groups/use-group-expenses-realtime-sync";
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { GroupsList } from "@/components/groups/groups-list";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,8 @@ type GroupsApiResponse = {
   groups: GroupDetails[];
 };
 
+const GROUPS_COLLABORATIVE_STALE_TIME = 15_000;
+
 type GroupsWorkspaceProps = {
   initialGroups: GroupDetails[];
 };
@@ -40,6 +43,8 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
     [initialGroups]
   );
 
+  useGroupExpensesRealtimeSync();
+
   const groupsQuery = useQuery({
     queryKey: queryKeys.groups.all,
     queryFn: () =>
@@ -48,7 +53,10 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
         credentials: "same-origin",
         cache: "no-store"
       }),
-    initialData
+    initialData,
+    staleTime: GROUPS_COLLABORATIVE_STALE_TIME,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true
   });
 
   const createGroupMutation = useMutation({
