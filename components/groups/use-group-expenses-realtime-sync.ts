@@ -34,6 +34,9 @@ export function useGroupExpensesRealtimeSync(
         },
         () => {
           void queryClient.invalidateQueries({ queryKey: queryKeys.groups.all });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.groups.unreadSummary
+          });
 
           if (groupId) {
             void queryClient.invalidateQueries({

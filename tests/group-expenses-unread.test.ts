@@ -11,6 +11,7 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createSharedExpense,
+  getGroupsUnreadSummary,
   listGroupsWithDetails,
   markGroupSharedExpensesViewed
 } from "@/services/group-expenses/group-expenses-service";
@@ -256,6 +257,145 @@ describe("group expenses service unread state", () => {
     expect(groups.find((item) => item.group.id === "group-2")?.group.hasUnreadExpenses).toBe(
       false
     );
+  });
+
+  it("espone unread summary true se almeno un gruppo ha nuove spese", async () => {
+    const mockClient = {
+      from: vi.fn((table: string) => {
+        if (table === "groups") {
+          return {
+            select: vi.fn(() => ({
+              order: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    id: "group-1",
+                    name: "Casa",
+                    description: null,
+                    currency: "EUR",
+                    owner_user_id: "user-1",
+                    created_at: "2026-03-01T00:00:00.000Z",
+                    updated_at: "2026-03-01T00:00:00.000Z"
+                  }
+                ],
+                error: null
+              })
+            }))
+          };
+        }
+
+        if (table === "group_members") {
+          return {
+            select: vi.fn(() => ({
+              order: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    id: "m-1",
+                    group_id: "group-1",
+                    user_id: "user-1",
+                    display_name: "Owner",
+                    guest_email: null,
+                    is_guest: false,
+                    role: "owner",
+                    joined_at: "2026-03-01T10:00:00.000Z",
+                    created_at: "2026-03-01T10:00:00.000Z",
+                    updated_at: "2026-03-01T10:00:00.000Z"
+                  }
+                ],
+                error: null
+              })
+            }))
+          };
+        }
+
+        if (table === "shared_expenses") {
+          return {
+            select: vi.fn(() => ({
+              order: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    id: "expense-1",
+                    group_id: "group-1",
+                    created_by_user_id: "user-2",
+                    paid_by_user_id: "user-2",
+                    paid_by_member_id: "m-1",
+                    title: "Spesa nuova",
+                    description: null,
+                    amount: 50,
+                    currency: "EUR",
+                    expense_date: "2026-03-10",
+                    split_method: "equal",
+                    status: "posted",
+                    transaction_id: null,
+                    created_at: "2026-03-12T10:00:00.000Z",
+                    updated_at: "2026-03-12T10:00:00.000Z"
+                  }
+                ],
+                error: null
+              })
+            }))
+          };
+        }
+
+        if (table === "shared_expense_splits") {
+          return {
+            select: vi.fn(() => ({
+              order: vi.fn().mockResolvedValue({ data: [], error: null })
+            }))
+          };
+        }
+
+        if (table === "group_member_views") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    id: "view-1",
+                    group_id: "group-1",
+                    user_id: "user-1",
+                    last_viewed_shared_expenses_at: "2026-03-11T10:00:00.000Z",
+                    created_at: "2026-03-11T10:00:00.000Z",
+                    updated_at: "2026-03-11T10:00:00.000Z"
+                  }
+                ],
+                error: null
+              })
+            }))
+          };
+        }
+
+        if (table === "settlements") {
+          return {
+            select: vi.fn(() => ({
+              not: vi.fn(() => ({
+                not: vi.fn(() => ({
+                  order: vi.fn().mockResolvedValue({ data: [], error: null })
+                }))
+              }))
+            }))
+          };
+        }
+
+        throw new Error(`Unexpected table ${table}`);
+      }),
+      rpc: vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: "user-1",
+            email: "owner@example.com",
+            full_name: "Owner",
+            avatar_url: null
+          }
+        ],
+        error: null
+      })
+    };
+
+    vi.mocked(createSupabaseServerClient).mockResolvedValue(mockClient as never);
+
+    const summary = await getGroupsUnreadSummary("user-1");
+
+    expect(summary.hasUnreadGroups).toBe(true);
   });
 
   it("mark as seen e idempotente", async () => {

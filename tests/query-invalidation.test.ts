@@ -57,6 +57,7 @@ describe("query invalidation map", () => {
 
     expect(getInvalidationQueryKeys("groups")).toEqual([
       queryKeys.groups.all,
+      queryKeys.groups.unreadSummary,
       queryKeys.groups.detailRoot
     ]);
   });

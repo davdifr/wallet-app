@@ -11,6 +11,7 @@ import {
   Users
 } from "lucide-react";
 
+import { GroupsNavIndicator } from "@/components/layout/groups-nav-indicator";
 import { prefetchDashboardRouteData } from "@/lib/query/prefetch-dashboard-route-data";
 import { cn } from "@/lib/utils";
 
@@ -72,6 +73,7 @@ export function SidebarNav() {
           >
             <Icon className="h-4 w-4" />
             {item.label}
+            {item.href === "/groups" ? <GroupsNavIndicator /> : null}
           </Link>
         );
       })}

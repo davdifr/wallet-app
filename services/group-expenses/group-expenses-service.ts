@@ -542,6 +542,14 @@ export async function listGroupsWithDetails(options?: {
   });
 }
 
+export async function getGroupsUnreadSummary(userId: string) {
+  const groups = await listGroupsWithDetails({ userId });
+
+  return {
+    hasUnreadGroups: groups.some((item) => item.group.hasUnreadExpenses)
+  };
+}
+
 export async function getGroupWithDetails(
   userId: string | null,
   groupId: string

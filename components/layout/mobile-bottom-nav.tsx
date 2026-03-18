@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { GroupsNavIndicator } from "@/components/layout/groups-nav-indicator";
 import { prefetchDashboardRouteData } from "@/lib/query/prefetch-dashboard-route-data";
 import { cn } from "@/lib/utils";
 
@@ -35,13 +36,14 @@ export function MobileBottomNav() {
                 onFocus={() => prefetchNavTarget(item.href)}
                 onTouchStart={() => prefetchNavTarget(item.href)}
                 className={cn(
-                  "flex min-h-11 flex-col items-center justify-center gap-1 rounded-[1rem] px-1 py-2 text-center text-[10px] font-medium leading-none transition",
+                  "relative flex min-h-11 flex-col items-center justify-center gap-1 rounded-[1rem] px-1 py-2 text-center text-[10px] font-medium leading-none transition",
                   active
                     ? "bg-slate-950 text-white shadow-sm"
                     : "text-slate-500 hover:bg-slate-100 hover:text-slate-950"
                 )}
                 aria-label={item.label}
               >
+                {item.href === "/groups" ? <GroupsNavIndicator mobile /> : null}
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="max-w-full truncate">{item.mobileLabel}</span>
               </Link>

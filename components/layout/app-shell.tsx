@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import { LogOut, Wallet } from "lucide-react";
 
 import { signOut } from "@/app/(dashboard)/dashboard/actions";
+import { GroupsRealtimeBridge } from "@/components/layout/groups-realtime-bridge";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ export function AppShell({ children, user }: AppShellProps) {
 
   return (
     <div className="min-h-screen">
+      <GroupsRealtimeBridge />
       <header className="safe-header sticky top-0 z-20 border-b border-white/70 bg-white/85 backdrop-blur">
         <div className="safe-container container flex h-16 items-center justify-between gap-4">
           <div className="flex items-center gap-3">

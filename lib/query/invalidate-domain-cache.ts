@@ -32,7 +32,11 @@ export function getInvalidationQueryKeys(domain: SyncDomain): QueryKey[] {
         queryKeys.savingGoals.all
       ];
     case "groups":
-      return [queryKeys.groups.all, queryKeys.groups.detailRoot];
+      return [
+        queryKeys.groups.all,
+        queryKeys.groups.unreadSummary,
+        queryKeys.groups.detailRoot
+      ];
   }
 }
 

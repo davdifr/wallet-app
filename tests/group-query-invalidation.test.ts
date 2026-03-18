@@ -14,10 +14,12 @@ describe("group query invalidation", () => {
 
     expect(getInvalidationQueryKeys("groups")).toEqual([
       queryKeys.groups.all,
+      queryKeys.groups.unreadSummary,
       queryKeys.groups.detailRoot
     ]);
     expect(invalidateQueries.mock.calls).toEqual([
       [{ queryKey: queryKeys.groups.all }],
+      [{ queryKey: queryKeys.groups.unreadSummary }],
       [{ queryKey: queryKeys.groups.detailRoot }]
     ]);
   });
