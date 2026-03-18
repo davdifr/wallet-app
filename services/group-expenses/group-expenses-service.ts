@@ -47,6 +47,10 @@ class GroupExpensesServiceError extends Error {
   }
 }
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
 }
@@ -659,21 +663,52 @@ export async function addGroupMember(values: AddGroupMemberFormValues) {
       role: "member" as const
     };
   } else {
-    const { data: user, error: userError } = await supabase
+    const normalizedEmail = normalizeEmail(values.email);
+    const { data: users, error: userError } = await supabase
       .from("users")
       .select("id, email, full_name")
-      .eq("email", values.email)
-      .single();
+      .ilike("email", normalizedEmail)
+      .limit(2);
 
     if (userError) {
-      throw new Error("Nessun utente dell'app trovato con questa email.");
+      throw new Error(userError.message);
     }
 
-    const appUser = user as {
+    if (!users || users.length === 0) {
+      throw new GroupExpensesServiceError(
+        "Nessun utente dell'app trovato con questa email.",
+        404
+      );
+    }
+
+    if (users.length > 1) {
+      throw new GroupExpensesServiceError(
+        "Abbiamo trovato piu utenti con questa email. Seleziona un suggerimento dalla lista.",
+        409
+      );
+    }
+
+    const appUser = users[0] as {
       id: string;
       email: string;
       full_name: string | null;
     };
+
+    const { data: groupMember, error: existingMemberError } = await supabase
+      .from("group_members")
+      .select("id")
+      .eq("group_id", values.groupId)
+      .eq("is_guest", false)
+      .eq("user_id", appUser.id)
+      .maybeSingle();
+
+    if (existingMemberError && existingMemberError.code !== "PGRST116") {
+      throw new Error(existingMemberError.message);
+    }
+
+    if (groupMember) {
+      throw new GroupExpensesServiceError("Questo utente fa gia parte del gruppo.", 409);
+    }
 
     payload = {
       group_id: values.groupId,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,24 @@ export function GroupMemberForm({
     memberType: "app_user"
   });
   const [state, setState] = useState<GroupFormState>({ success: false });
+  const emailQuery = values.email.trim().toLowerCase();
+  const suggestedCandidates = useMemo(() => {
+    if (memberType !== "app_user" || emailQuery.length === 0) {
+      return [];
+    }
+
+    return inviteCandidates
+      .filter((candidate) => {
+        const normalizedEmail = candidate.email.toLowerCase();
+        const normalizedName = candidate.fullName?.toLowerCase() ?? "";
+
+        return (
+          normalizedEmail.includes(emailQuery) ||
+          normalizedName.includes(emailQuery)
+        );
+      })
+      .slice(0, 5);
+  }, [emailQuery, inviteCandidates, memberType]);
 
   return (
     <form
@@ -95,33 +114,65 @@ export function GroupMemberForm({
           <Label htmlFor={`email-${groupId}`}>
             {memberType === "app_user" ? "Ricerca per email" : "Email ospite"}
           </Label>
-          <Input
-            id={`email-${groupId}`}
-            placeholder={
-              memberType === "app_user"
-                ? "cerca utente@wallet.app"
-                : "opzionale@guest.com"
-            }
-            list={memberType === "app_user" ? `invite-candidates-${groupId}` : undefined}
-            value={memberType === "app_user" ? values.email : values.guestEmail}
-            onChange={(event) =>
-              setValues((current) => ({
-                ...current,
-                email: memberType === "app_user" ? event.target.value : current.email,
-                guestEmail:
-                  memberType === "guest" ? event.target.value : current.guestEmail
-              }))
-            }
-          />
-          {memberType === "app_user" ? (
-            <datalist id={`invite-candidates-${groupId}`}>
-              {inviteCandidates.map((candidate) => (
-                <option key={candidate.id} value={candidate.email}>
-                  {candidate.fullName ?? candidate.email}
-                </option>
-              ))}
-            </datalist>
-          ) : null}
+          <div className="space-y-2">
+            <div className="relative">
+              {memberType === "app_user" ? (
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              ) : null}
+              <Input
+                id={`email-${groupId}`}
+                className={memberType === "app_user" ? "pl-10" : undefined}
+                placeholder={
+                  memberType === "app_user"
+                    ? "Cerca per email o nome"
+                    : "opzionale@guest.com"
+                }
+                value={memberType === "app_user" ? values.email : values.guestEmail}
+                onChange={(event) =>
+                  setValues((current) => ({
+                    ...current,
+                    email: memberType === "app_user" ? event.target.value : current.email,
+                    guestEmail:
+                      memberType === "guest" ? event.target.value : current.guestEmail
+                  }))
+                }
+              />
+            </div>
+
+            {memberType === "app_user" && suggestedCandidates.length > 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+                <p className="px-2 pb-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                  Suggerimenti
+                </p>
+                <div className="space-y-1">
+                  {suggestedCandidates.map((candidate) => (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-slate-50"
+                      onClick={() => {
+                        setValues((current) => ({
+                          ...current,
+                          email: candidate.email
+                        }));
+                        setState({ success: false });
+                      }}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-slate-900">
+                          {candidate.fullName ?? candidate.email}
+                        </p>
+                        {candidate.fullName ? (
+                          <p className="truncate text-xs text-slate-500">{candidate.email}</p>
+                        ) : null}
+                      </div>
+                      <span className="shrink-0 text-xs text-slate-400">Seleziona</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor={`displayName-${groupId}`}>Nome visualizzato</Label>

@@ -8,6 +8,18 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+function getErrorStatus(error: unknown) {
+  if (
+    error instanceof Error &&
+    "statusCode" in error &&
+    typeof error.statusCode === "number"
+  ) {
+    return error.statusCode;
+  }
+
+  return 500;
+}
+
 export async function POST(request: Request, context: RouteContext) {
   const user = await getUser();
 
@@ -41,7 +53,7 @@ export async function POST(request: Request, context: RouteContext) {
         message:
           error instanceof Error ? error.message : "Impossibile aggiungere il membro."
       },
-      { status: 500 }
+      { status: getErrorStatus(error) }
     );
   }
 }
