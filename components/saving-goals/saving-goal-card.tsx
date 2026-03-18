@@ -1,7 +1,8 @@
-import { CalendarClock, Flag, PiggyBank } from "lucide-react";
+import { CalendarClock, Flag, PiggyBank, Trash2 } from "lucide-react";
 
 import { GoalContributionForm } from "@/components/saving-goals/goal-contribution-form";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { calculateSavingGoalMetrics } from "@/lib/saving-goals/calculations";
 import type { GoalContributionFormState, SavingGoal } from "@/types/saving-goals";
@@ -9,10 +10,12 @@ import type { GoalContributionFormState, SavingGoal } from "@/types/saving-goals
 type SavingGoalCardProps = {
   goal: SavingGoal;
   isSubmittingContribution?: boolean;
+  isDeleting?: boolean;
   onAddContribution: (
     goalId: string,
     values: { amount: string; note: string }
   ) => Promise<GoalContributionFormState>;
+  onDelete: (goal: SavingGoal) => void;
 };
 
 function formatCurrency(value: number) {
@@ -31,7 +34,9 @@ const priorityLabel = {
 export function SavingGoalCard({
   goal,
   isSubmittingContribution = false,
-  onAddContribution
+  isDeleting = false,
+  onAddContribution,
+  onDelete
 }: SavingGoalCardProps) {
   const metrics = calculateSavingGoalMetrics(goal);
 
@@ -64,11 +69,27 @@ export function SavingGoalCard({
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-right">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Progresso</p>
-          <p className="mt-2 font-display text-3xl font-semibold text-slate-950">
-            {metrics.progressPercentage}%
-          </p>
+        <div className="space-y-3">
+          <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-right">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Progresso</p>
+            <p className="mt-2 font-display text-3xl font-semibold text-slate-950">
+              {metrics.progressPercentage}%
+            </p>
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+              disabled={isDeleting}
+              onClick={() => onDelete(goal)}
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeleting ? "Elimino..." : "Elimina"}
+            </Button>
+          </div>
         </div>
       </div>
 

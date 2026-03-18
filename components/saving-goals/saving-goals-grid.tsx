@@ -4,16 +4,20 @@ import type { GoalContributionFormState, SavingGoal } from "@/types/saving-goals
 type SavingGoalsGridProps = {
   goals: SavingGoal[];
   submittingGoalId?: string | null;
+  deletingGoalId?: string | null;
   onAddContribution: (
     goalId: string,
     values: { amount: string; note: string }
   ) => Promise<GoalContributionFormState>;
+  onDelete: (goal: SavingGoal) => void;
 };
 
 export function SavingGoalsGrid({
   goals,
   submittingGoalId = null,
-  onAddContribution
+  deletingGoalId = null,
+  onAddContribution,
+  onDelete
 }: SavingGoalsGridProps) {
   if (goals.length === 0) {
     return (
@@ -35,7 +39,9 @@ export function SavingGoalsGrid({
           key={goal.id}
           goal={goal}
           isSubmittingContribution={submittingGoalId === goal.id}
+          isDeleting={deletingGoalId === goal.id}
           onAddContribution={onAddContribution}
+          onDelete={onDelete}
         />
       ))}
     </div>

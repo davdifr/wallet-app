@@ -51,8 +51,12 @@ export function RecurringIncomesWorkspace({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isMaterializing, setIsMaterializing] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [recurringIncomeToDelete, setRecurringIncomeToDelete] = useState<RecurringIncome | null>(
+    null
+  );
   const [pageMessage, setPageMessage] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
 
@@ -175,6 +179,38 @@ export function RecurringIncomesWorkspace({
     }
   }
 
+  async function handleDeleteRecurringIncome() {
+    if (!recurringIncomeToDelete) {
+      return;
+    }
+
+    const target = recurringIncomeToDelete;
+    setDeletingId(target.id);
+    setPageError(null);
+    setPageMessage(null);
+
+    try {
+      const response = await fetch(`/api/recurring-incomes/${target.id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      });
+
+      await readResponse<{ recurringIncome: RecurringIncome }>(response);
+      setRecurringIncomes((current) => current.filter((item) => item.id !== target.id));
+      setPageMessage("Entrata ricorrente eliminata. Le transazioni gia generate restano invariate.");
+      setRecurringIncomeToDelete(null);
+    } catch (error) {
+      setPageError(
+        error instanceof Error
+          ? error.message
+          : "Impossibile eliminare l'entrata ricorrente."
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -226,6 +262,12 @@ export function RecurringIncomesWorkspace({
         <RecurringIncomesList
           recurringIncomes={recurringIncomes}
           loadingId={loadingId}
+          deletingId={deletingId}
+          onDelete={(recurringIncome) => {
+            setPageError(null);
+            setPageMessage(null);
+            setRecurringIncomeToDelete(recurringIncome);
+          }}
           onToggle={(id, isActive) => {
             void handleToggle(id, isActive);
           }}
@@ -239,6 +281,50 @@ export function RecurringIncomesWorkspace({
         description="Configura una ricorrenza settimanale, mensile o annuale sincronizzata con le transazioni."
       >
         <RecurringIncomeForm isSubmitting={isSubmitting} onSubmit={handleSubmit} />
+      </Modal>
+
+      <Modal
+        open={recurringIncomeToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRecurringIncomeToDelete(null);
+          }
+        }}
+        title="Conferma eliminazione"
+        description="La ricorrenza verra rimossa senza cancellare retroattivamente le transazioni gia materializzate."
+      >
+        {recurringIncomeToDelete ? (
+          <div className="space-y-5">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm text-slate-600">
+              <p className="font-medium text-slate-900">
+                {recurringIncomeToDelete.category} · {recurringIncomeToDelete.description}
+              </p>
+              <p className="mt-1">
+                Fonte {recurringIncomeToDelete.source} · prossimo evento{" "}
+                {recurringIncomeToDelete.nextOccurrenceOn}
+              </p>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setRecurringIncomeToDelete(null)}
+                disabled={deletingId === recurringIncomeToDelete.id}
+              >
+                Annulla
+              </Button>
+              <Button
+                type="button"
+                className="bg-rose-600 text-white hover:bg-rose-700"
+                onClick={() => void handleDeleteRecurringIncome()}
+                disabled={deletingId === recurringIncomeToDelete.id}
+              >
+                {deletingId === recurringIncomeToDelete.id ? "Elimino..." : "Elimina"}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Modal>
     </div>
   );

@@ -7,6 +7,8 @@ export type GroupMember = {
   groupId: string;
   userId: string | null;
   displayName: string;
+  email: string | null;
+  avatarUrl: string | null;
   guestEmail: string | null;
   isGuest: boolean;
   role: GroupRole;
@@ -86,6 +88,13 @@ export type DebtEdge = {
 export type GroupBalanceSummary = {
   balances: GroupBalance[];
   debts: DebtEdge[];
+};
+
+export type GroupDetails = {
+  group: Group;
+  expenses: SharedExpense[];
+  settlements: Settlement[];
+  summary: GroupBalanceSummary;
 };
 
 export type CreateGroupFormValues = {

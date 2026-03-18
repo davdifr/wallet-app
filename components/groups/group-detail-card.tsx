@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, ReceiptText, UserPlus, Users } from "lucide-react";
+import { Plus, ReceiptText, Trash2, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 
 import { AcceptSettlementForm } from "@/components/groups/accept-settlement-form";
@@ -35,10 +35,14 @@ type GroupDetailCardProps = {
   pendingAcceptSettlementId?: string | null;
   pendingAddMemberGroupId?: string | null;
   pendingCreateExpenseGroupId?: string | null;
+  pendingDeleteGroupId?: string | null;
   pendingSettleSplitId?: string | null;
   onAcceptSettlement: (settlementId: string) => Promise<{ success: boolean; message?: string }>;
   onAddMember: (
     values: AddGroupMemberFormValues
+  ) => Promise<{ success: boolean; message?: string; errors?: Record<string, string[] | undefined> }>;
+  onDeleteGroup: (
+    groupId: string
   ) => Promise<{ success: boolean; message?: string; errors?: Record<string, string[] | undefined> }>;
   onCreateExpense: (
     values: CreateSharedExpenseFormValues
@@ -62,18 +66,26 @@ export function GroupDetailCard({
   pendingAcceptSettlementId = null,
   pendingAddMemberGroupId = null,
   pendingCreateExpenseGroupId = null,
+  pendingDeleteGroupId = null,
   pendingSettleSplitId = null,
   onAcceptSettlement,
   onAddMember,
+  onDeleteGroup,
   onCreateExpense,
   onSettleSplit
 }: GroupDetailCardProps) {
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const availableCandidates = inviteCandidates.filter(
     (candidate) => !group.group.members.some((member) => member.userId === candidate.id)
   );
+  const currentUserMembership =
+    currentUserId === null
+      ? null
+      : group.group.members.find((member) => member.userId === currentUserId) ?? null;
+  const canDeleteGroup = currentUserMembership?.role === "owner";
 
   async function handleAddMember(values: AddGroupMemberFormValues) {
     const result = await onAddMember(values);
@@ -90,6 +102,16 @@ export function GroupDetailCard({
 
     if (result.success) {
       setIsExpenseModalOpen(false);
+    }
+
+    return result;
+  }
+
+  async function handleDeleteGroup() {
+    const result = await onDeleteGroup(group.group.id);
+
+    if (result.success) {
+      setIsDeleteModalOpen(false);
     }
 
     return result;
@@ -120,6 +142,18 @@ export function GroupDetailCard({
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
+              {canDeleteGroup ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                  disabled={pendingDeleteGroupId === group.group.id}
+                  onClick={() => setIsDeleteModalOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {pendingDeleteGroupId === group.group.id ? "Elimino..." : "Elimina"}
+                </Button>
+              ) : null}
               <Button type="button" variant="outline" onClick={() => setIsMemberModalOpen(true)}>
                 <UserPlus className="h-4 w-4" />
                 Aggiungi membro
@@ -354,6 +388,42 @@ export function GroupDetailCard({
           isSubmitting={pendingCreateExpenseGroupId === group.group.id}
           onSubmit={handleCreateExpense}
         />
+      </Modal>
+
+      <Modal
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        title="Conferma eliminazione"
+        description="Il gruppo verra eliminato solo se non contiene spese, rimborsi o transazioni collegate."
+      >
+        <div className="space-y-5">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm text-slate-600">
+            <p className="font-medium text-slate-900">{group.group.name}</p>
+            <p className="mt-1">
+              Membri {group.group.members.length} · spese {group.expenses.length} · rimborsi{" "}
+              {group.settlements.length}
+            </p>
+          </div>
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={pendingDeleteGroupId === group.group.id}
+            >
+              Annulla
+            </Button>
+            <Button
+              type="button"
+              className="bg-rose-600 text-white hover:bg-rose-700"
+              onClick={() => void handleDeleteGroup()}
+              disabled={pendingDeleteGroupId === group.group.id}
+            >
+              {pendingDeleteGroupId === group.group.id ? "Elimino..." : "Elimina"}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </>
   );

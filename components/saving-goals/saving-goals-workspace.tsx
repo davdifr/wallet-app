@@ -34,14 +34,18 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
   const [goals, setGoals] = useState(initialGoals);
   const [isSubmittingGoal, setIsSubmittingGoal] = useState(false);
   const [submittingContributionGoalId, setSubmittingContributionGoalId] = useState<string | null>(null);
+  const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [pageMessage, setPageMessage] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [goalToDelete, setGoalToDelete] = useState<SavingGoal | null>(null);
 
   async function handleCreateGoal(
     values: SavingGoalFormValues
   ): Promise<SavingGoalFormState> {
     setIsSubmittingGoal(true);
     setPageError(null);
+    setPageMessage(null);
 
     try {
       const response = await fetch("/api/saving-goals", {
@@ -78,6 +82,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
   ): Promise<GoalContributionFormState> {
     setSubmittingContributionGoalId(goalId);
     setPageError(null);
+    setPageMessage(null);
 
     try {
       const response = await fetch(`/api/saving-goals/${goalId}/contributions`, {
@@ -107,6 +112,34 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
       };
     } finally {
       setSubmittingContributionGoalId(null);
+    }
+  }
+
+  async function handleDeleteGoal() {
+    if (!goalToDelete) {
+      return;
+    }
+
+    const target = goalToDelete;
+    setDeletingGoalId(target.id);
+    setPageError(null);
+    setPageMessage(null);
+
+    try {
+      const response = await fetch(`/api/saving-goals/${target.id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      });
+
+      await readResponse<{ goal: SavingGoal }>(response);
+      setGoals((current) => current.filter((goal) => goal.id !== target.id));
+      setGoalToDelete(null);
+      setPageMessage("Goal eliminato correttamente.");
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Impossibile eliminare il goal.");
+    } finally {
+      setDeletingGoalId(null);
     }
   }
 
@@ -142,6 +175,12 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
         </div>
       ) : null}
 
+      {pageMessage ? (
+        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+          {pageMessage}
+        </div>
+      ) : null}
+
       <section>
         <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
           <CardHeader>
@@ -163,7 +202,13 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
             <SavingGoalsGrid
               goals={goals}
               submittingGoalId={submittingContributionGoalId}
+              deletingGoalId={deletingGoalId}
               onAddContribution={handleAddContribution}
+              onDelete={(goal) => {
+                setPageError(null);
+                setPageMessage(null);
+                setGoalToDelete(goal);
+              }}
             />
           </CardContent>
         </Card>
@@ -176,6 +221,51 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
         description="Definisci priorita, target e data obiettivo per il prossimo traguardo."
       >
         <SavingGoalForm isSubmitting={isSubmittingGoal} onSubmit={handleCreateGoal} />
+      </Modal>
+
+      <Modal
+        open={goalToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setGoalToDelete(null);
+          }
+        }}
+        title="Conferma eliminazione"
+        description="Il goal verra eliminato insieme allo storico dei contributi collegati."
+      >
+        {goalToDelete ? (
+          <div className="space-y-5">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm text-slate-600">
+              <p className="font-medium text-slate-900">{goalToDelete.title}</p>
+              <p className="mt-1">
+                Target {goalToDelete.targetAmount.toLocaleString("it-IT", {
+                  style: "currency",
+                  currency: "EUR"
+                })}{" "}
+                · contributi registrati {goalToDelete.contributions.length}
+              </p>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setGoalToDelete(null)}
+                disabled={deletingGoalId === goalToDelete.id}
+              >
+                Annulla
+              </Button>
+              <Button
+                type="button"
+                className="bg-rose-600 text-white hover:bg-rose-700"
+                onClick={() => void handleDeleteGoal()}
+                disabled={deletingGoalId === goalToDelete.id}
+              >
+                {deletingGoalId === goalToDelete.id ? "Elimino..." : "Elimina"}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Modal>
     </div>
   );

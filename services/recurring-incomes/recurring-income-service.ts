@@ -13,6 +13,16 @@ type RecurringIncomeUpdate =
   Database["public"]["Tables"]["recurring_incomes"]["Update"];
 type TransactionInsert = Database["public"]["Tables"]["transactions"]["Insert"];
 
+class RecurringIncomeServiceError extends Error {
+  statusCode: number;
+
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.name = "RecurringIncomeServiceError";
+    this.statusCode = statusCode;
+  }
+}
+
 function mapRecurringIncome(
   row: Database["public"]["Tables"]["recurring_incomes"]["Row"]
 ): RecurringIncome {
@@ -134,12 +144,38 @@ export async function createRecurringIncome(
   return mapRecurringIncome(data as RecurringIncomeRow);
 }
 
-export async function setRecurringIncomeActiveState(id: string, isActive: boolean) {
+async function getOwnedRecurringIncome(userId: string, id: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("recurring_incomes")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      throw new RecurringIncomeServiceError("Entrata ricorrente non trovata.", 404);
+    }
+
+    throw new Error(error.message);
+  }
+
+  return data as RecurringIncomeRow;
+}
+
+export async function setRecurringIncomeActiveState(
+  userId: string,
+  id: string,
+  isActive: boolean
+) {
+  await getOwnedRecurringIncome(userId, id);
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("recurring_incomes")
     .update({ is_active: isActive } as RecurringIncomeUpdate as never)
     .eq("id", id)
+    .eq("user_id", userId)
     .select("*")
     .single();
 
@@ -148,6 +184,22 @@ export async function setRecurringIncomeActiveState(id: string, isActive: boolea
   }
 
   return mapRecurringIncome(data as RecurringIncomeRow);
+}
+
+export async function deleteRecurringIncome(userId: string, id: string) {
+  const recurringIncome = await getOwnedRecurringIncome(userId, id);
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("recurring_incomes")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapRecurringIncome(recurringIncome);
 }
 
 export async function materializeRecurringIncomes(

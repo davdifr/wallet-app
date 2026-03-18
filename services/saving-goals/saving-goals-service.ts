@@ -14,6 +14,16 @@ type GoalContributionInsert =
   Database["public"]["Tables"]["goal_contributions"]["Insert"];
 type GoalContributionRow = Database["public"]["Tables"]["goal_contributions"]["Row"];
 
+class SavingGoalsServiceError extends Error {
+  statusCode: number;
+
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.name = "SavingGoalsServiceError";
+    this.statusCode = statusCode;
+  }
+}
+
 function mapContribution(
   row: Database["public"]["Tables"]["goal_contributions"]["Row"]
 ): GoalContribution {
@@ -65,6 +75,26 @@ async function getSavingGoalById(goalId: string) {
     goal as SavingGoalRow,
     ((contributions ?? []) as GoalContributionRow[]).map(mapContribution)
   );
+}
+
+async function getOwnedSavingGoal(userId: string, goalId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("saving_goals")
+    .select("*")
+    .eq("id", goalId)
+    .eq("user_id", userId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      throw new SavingGoalsServiceError("Goal non trovato.", 404);
+    }
+
+    throw new Error(error.message);
+  }
+
+  return data as SavingGoalRow;
 }
 
 export async function listSavingGoals() {
@@ -142,18 +172,7 @@ export async function addGoalContribution(
 ) {
   const supabase = await createSupabaseServerClient();
   const amount = Number(values.amount);
-
-  const { data: goal, error: goalError } = await supabase
-    .from("saving_goals")
-    .select("*")
-    .eq("id", values.goalId)
-    .single();
-
-  if (goalError) {
-    throw new Error(goalError.message);
-  }
-
-  const goalRow = goal as SavingGoalRow;
+  const goalRow = await getOwnedSavingGoal(userId, values.goalId);
 
   const contributionPayload: GoalContributionInsert = {
     goal_id: values.goalId,
@@ -188,4 +207,20 @@ export async function addGoalContribution(
   }
 
   return getSavingGoalById(values.goalId);
+}
+
+export async function deleteSavingGoal(userId: string, goalId: string) {
+  const goal = await getOwnedSavingGoal(userId, goalId);
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("saving_goals")
+    .delete()
+    .eq("id", goalId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapGoal(goal, []);
 }

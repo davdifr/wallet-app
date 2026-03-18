@@ -76,7 +76,7 @@ export async function toggleRecurringIncomeAction(formData: FormData) {
     return;
   }
 
-  await setRecurringIncomeActiveState(id, isActive === "true");
+  await setRecurringIncomeActiveState(user.id, id, isActive === "true");
   revalidatePath("/recurring-incomes");
 }
 

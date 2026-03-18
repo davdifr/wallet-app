@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const goalPriorities = ["low", "medium", "high"] as const;
+export const savingGoalIdSchema = z.string().uuid("Goal non valido.");
 
 export const savingGoalSchema = z.object({
   title: z

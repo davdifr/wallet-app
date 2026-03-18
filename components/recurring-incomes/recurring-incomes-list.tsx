@@ -1,6 +1,6 @@
 "use client";
 
-import { PauseCircle, PlayCircle } from "lucide-react";
+import { PauseCircle, PlayCircle, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,9 @@ import type { RecurringIncome } from "@/types/recurring-incomes";
 type RecurringIncomesListProps = {
   recurringIncomes: RecurringIncome[];
   loadingId?: string | null;
+  deletingId?: string | null;
   onToggle: (id: string, isActive: boolean) => void;
+  onDelete: (recurringIncome: RecurringIncome) => void;
 };
 
 function formatCurrency(value: number) {
@@ -22,7 +24,9 @@ function formatCurrency(value: number) {
 export function RecurringIncomesList({
   recurringIncomes,
   loadingId = null,
-  onToggle
+  deletingId = null,
+  onToggle,
+  onDelete
 }: RecurringIncomesListProps) {
   return (
     <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
@@ -80,24 +84,38 @@ export function RecurringIncomesList({
                     {formatCurrency(item.amount)}
                   </p>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={loadingId === item.id}
-                    onClick={() => onToggle(item.id, !item.isActive)}
-                  >
-                    {item.isActive ? (
-                      <PauseCircle className="h-4 w-4" />
-                    ) : (
-                      <PlayCircle className="h-4 w-4" />
-                    )}
-                    {loadingId === item.id
-                      ? "Aggiorno..."
-                      : item.isActive
-                        ? "Disattiva"
-                        : "Riattiva"}
-                  </Button>
+                  <div className="flex flex-wrap gap-2 sm:justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={loadingId === item.id || deletingId === item.id}
+                      onClick={() => onToggle(item.id, !item.isActive)}
+                    >
+                      {item.isActive ? (
+                        <PauseCircle className="h-4 w-4" />
+                      ) : (
+                        <PlayCircle className="h-4 w-4" />
+                      )}
+                      {loadingId === item.id
+                        ? "Aggiorno..."
+                        : item.isActive
+                          ? "Disattiva"
+                          : "Riattiva"}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                      disabled={loadingId === item.id || deletingId === item.id}
+                      onClick={() => onDelete(item)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {deletingId === item.id ? "Elimino..." : "Elimina"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}

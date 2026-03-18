@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const recurringIncomeFrequencies = ["weekly", "monthly", "yearly"] as const;
+export const recurringIncomeIdSchema = z.string().uuid("Entrata ricorrente non valida.");
 
 export const recurringIncomeSchema = z
   .object({

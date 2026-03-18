@@ -73,6 +73,7 @@ export async function addGroupMemberAction(
   try {
     await addGroupMember(parsed.data);
     revalidatePath("/groups");
+    revalidatePath(`/groups/${parsed.data.groupId}`);
     return { success: true, message: "Membro aggiunto." };
   } catch (error) {
     return {
@@ -111,6 +112,7 @@ export async function createSharedExpenseAction(
   try {
     await createSharedExpense(user.id, parsed.data);
     revalidatePath("/groups");
+    revalidatePath(`/groups/${parsed.data.groupId}`);
     revalidatePath("/transactions");
     return { success: true, message: "Spesa condivisa creata." };
   } catch (error) {
@@ -149,6 +151,7 @@ export async function settleSplitAction(
   try {
     const result = await settleSharedExpenseSplit(user.id, parsed.data);
     revalidatePath("/groups");
+    revalidatePath(`/groups/${parsed.data.groupId}`);
     revalidatePath("/transactions");
     return {
       success: true,

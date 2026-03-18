@@ -8,6 +8,7 @@ import type { Database } from "@/types/database";
 import type {
   AddGroupMemberFormValues,
   CreateGroupFormValues,
+  GroupDetails,
   CreateSharedExpenseFormValues,
   Group,
   GroupBalanceSummary,
@@ -35,6 +36,16 @@ type SettlementInsert = Database["public"]["Tables"]["settlements"]["Insert"];
 type SettlementUpdate = Database["public"]["Tables"]["settlements"]["Update"];
 type TransactionInsert = Database["public"]["Tables"]["transactions"]["Insert"];
 
+class GroupExpensesServiceError extends Error {
+  statusCode: number;
+
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.name = "GroupExpensesServiceError";
+    this.statusCode = statusCode;
+  }
+}
+
 function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
 }
@@ -48,6 +59,8 @@ function mapGroupMember(row: {
   group_id: string;
   user_id: string | null;
   display_name: string;
+  email: string | null;
+  avatar_url: string | null;
   guest_email: string | null;
   is_guest: boolean;
   role: "owner" | "admin" | "member";
@@ -58,6 +71,8 @@ function mapGroupMember(row: {
     groupId: row.group_id,
     userId: row.user_id,
     displayName: row.display_name,
+    email: row.email,
+    avatarUrl: row.avatar_url,
     guestEmail: row.guest_email,
     isGuest: row.is_guest,
     role: row.role,
@@ -81,6 +96,34 @@ function mapSharedExpenseSplit(row: {
     settledAmount: row.settled_amount,
     isPaid: row.is_paid
   };
+}
+
+async function getOwnedGroup(userId: string, groupId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("groups")
+    .select("*")
+    .eq("id", groupId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      throw new GroupExpensesServiceError("Gruppo non trovato.", 404);
+    }
+
+    throw new Error(error.message);
+  }
+
+  const group = data as GroupRow;
+
+  if (group.owner_user_id !== userId) {
+    throw new GroupExpensesServiceError(
+      "Solo il proprietario del gruppo puo eliminarlo.",
+      403
+    );
+  }
+
+  return group;
 }
 
 async function applySettlementToSplit(
@@ -220,15 +263,38 @@ async function syncSettlementTransactions(input: {
   }
 }
 
-export async function listGroupsWithDetails(): Promise<
-  Array<{
-    group: Group;
-    expenses: SharedExpense[];
-    settlements: Settlement[];
-    summary: GroupBalanceSummary;
-  }>
-> {
+export async function listGroupsWithDetails(options?: {
+  groupId?: string;
+}): Promise<GroupDetails[]> {
   const supabase = await createSupabaseServerClient();
+  const groupId = options?.groupId ?? null;
+
+  const groupsQuery = supabase.from("groups").select("*").order("created_at", { ascending: false });
+  const membersQuery = supabase
+    .from("group_members")
+    .select("*")
+    .order("created_at", { ascending: true });
+  const expensesQuery = supabase
+    .from("shared_expenses")
+    .select("*")
+    .order("expense_date", { ascending: false });
+  const splitsQuery = supabase
+    .from("shared_expense_splits")
+    .select("*")
+    .order("created_at", { ascending: true });
+  const settlementsQuery = supabase
+    .from("settlements")
+    .select("*")
+    .not("payer_member_id", "is", null)
+    .not("payee_member_id", "is", null)
+    .order("settlement_date", { ascending: false });
+
+  const filteredGroupsQuery = groupId ? groupsQuery.eq("id", groupId) : groupsQuery;
+  const filteredMembersQuery = groupId ? membersQuery.eq("group_id", groupId) : membersQuery;
+  const filteredExpensesQuery = groupId ? expensesQuery.eq("group_id", groupId) : expensesQuery;
+  const filteredSettlementsQuery = groupId
+    ? settlementsQuery.eq("group_id", groupId)
+    : settlementsQuery;
 
   const [
     { data: groups, error: groupsError },
@@ -237,16 +303,11 @@ export async function listGroupsWithDetails(): Promise<
     { data: splits, error: splitsError },
     { data: settlements, error: settlementsError }
   ] = await Promise.all([
-    supabase.from("groups").select("*").order("created_at", { ascending: false }),
-    supabase.from("group_members").select("*").order("created_at", { ascending: true }),
-    supabase.from("shared_expenses").select("*").order("expense_date", { ascending: false }),
-    supabase.from("shared_expense_splits").select("*").order("created_at", { ascending: true }),
-    supabase
-      .from("settlements")
-      .select("*")
-      .not("payer_member_id", "is", null)
-      .not("payee_member_id", "is", null)
-      .order("settlement_date", { ascending: false })
+    filteredGroupsQuery,
+    filteredMembersQuery,
+    filteredExpensesQuery,
+    splitsQuery,
+    filteredSettlementsQuery
   ]);
 
   if (groupsError) throw new Error(groupsError.message);
@@ -270,6 +331,8 @@ export async function listGroupsWithDetails(): Promise<
         (item as { display_name?: string }).display_name ??
         (item as { displayName?: string }).displayName ??
         "Member",
+      email: null,
+      avatar_url: null,
       guest_email:
         (item as { guest_email?: string | null }).guest_email ??
         (item as { guestEmail?: string | null }).guestEmail ??
@@ -283,8 +346,58 @@ export async function listGroupsWithDetails(): Promise<
     })
   );
 
+  const userIds = Array.from(
+    new Set(
+      mappedMembers
+        .map((member) => member.userId)
+        .filter((userId): userId is string => typeof userId === "string" && userId.length > 0)
+    )
+  );
+
+  let usersById = new Map<
+    string,
+    { email: string; full_name: string | null; avatar_url: string | null }
+  >();
+
+  if (userIds.length > 0) {
+    const { data: users, error: usersError } = await supabase
+      .from("users")
+      .select("id, email, full_name, avatar_url")
+      .in("id", userIds);
+
+    if (usersError) {
+      throw new Error(usersError.message);
+    }
+
+    usersById = new Map(
+      ((users ?? []) as Array<{
+        id: string;
+        email: string;
+        full_name: string | null;
+        avatar_url: string | null;
+      }>).map((user) => [user.id, user])
+    );
+  }
+
+  const enrichedMembers = mappedMembers.map((member) => {
+    const profile = member.userId ? usersById.get(member.userId) : null;
+    const normalizedDisplayName =
+      !member.isGuest &&
+      profile &&
+      (member.displayName === "Owner" || member.displayName === "Member")
+        ? profile.full_name ?? profile.email
+        : member.displayName;
+
+    return {
+      ...member,
+      displayName: normalizedDisplayName,
+      email: member.isGuest ? member.guestEmail : profile?.email ?? null,
+      avatarUrl: member.isGuest ? null : profile?.avatar_url ?? null
+    };
+  });
+
   return groupRows.map((group) => {
-    const groupMembers = mappedMembers.filter((member) => member.groupId === group.id);
+    const groupMembers = enrichedMembers.filter((member) => member.groupId === group.id);
     const groupExpenses: SharedExpense[] = expenseRows
       .filter((expense) => expense.group_id === group.id)
       .map((expense) => {
@@ -374,6 +487,11 @@ export async function listGroupsWithDetails(): Promise<
   });
 }
 
+export async function getGroupWithDetails(groupId: string): Promise<GroupDetails | null> {
+  const groups = await listGroupsWithDetails({ groupId });
+  return groups[0] ?? null;
+}
+
 export async function listUserInviteCandidates(): Promise<UserInviteCandidate[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
@@ -407,6 +525,56 @@ export async function createGroup(userId: string, values: CreateGroupFormValues)
   const { error } = await supabase.from("groups").insert(payload as never);
 
   if (error) throw new Error(error.message);
+}
+
+export async function deleteGroup(userId: string, groupId: string) {
+  const group = await getOwnedGroup(userId, groupId);
+  const supabase = await createSupabaseServerClient();
+
+  const [
+    { count: expensesCount, error: expensesError },
+    { count: settlementsCount, error: settlementsError },
+    { count: transactionsCount, error: transactionsError }
+  ] = await Promise.all([
+    supabase
+      .from("shared_expenses")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId),
+    supabase
+      .from("settlements")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId),
+    supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId)
+  ]);
+
+  if (expensesError) throw new Error(expensesError.message);
+  if (settlementsError) throw new Error(settlementsError.message);
+  if (transactionsError) throw new Error(transactionsError.message);
+
+  if ((expensesCount ?? 0) > 0 || (settlementsCount ?? 0) > 0) {
+    throw new GroupExpensesServiceError(
+      "Non puoi eliminare un gruppo che contiene gia spese o rimborsi. Rimuovi prima i movimenti collegati.",
+      409
+    );
+  }
+
+  if ((transactionsCount ?? 0) > 0) {
+    throw new GroupExpensesServiceError(
+      "Non puoi eliminare il gruppo finche esistono transazioni collegate.",
+      409
+    );
+  }
+
+  const { error } = await supabase.from("groups").delete().eq("id", groupId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return group;
 }
 
 export async function addGroupMember(values: AddGroupMemberFormValues) {

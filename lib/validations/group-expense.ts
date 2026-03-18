@@ -1,12 +1,14 @@
 import { z } from "zod";
 
+export const groupIdSchema = z.string().uuid("Gruppo non valido.");
+
 export const createGroupSchema = z.object({
   name: z.string().trim().min(2, "Il nome gruppo deve avere almeno 2 caratteri.").max(80),
   description: z.string().trim().max(180).default("")
 });
 
 export const addGroupMemberSchema = z.object({
-  groupId: z.string().uuid("Gruppo non valido."),
+  groupId: groupIdSchema,
   email: z.string().trim().email("Inserisci un'email valida.").or(z.literal("")),
   displayName: z.string().trim().max(80),
   guestEmail: z.string().trim().email("Email non valida.").or(z.literal("")),
@@ -30,7 +32,7 @@ export const addGroupMemberSchema = z.object({
 });
 
 export const createSharedExpenseSchema = z.object({
-  groupId: z.string().uuid("Gruppo non valido."),
+  groupId: groupIdSchema,
   title: z.string().trim().min(2, "Il titolo deve avere almeno 2 caratteri.").max(120),
   description: z.string().trim().max(200).default(""),
   amount: z
@@ -46,7 +48,7 @@ export const createSharedExpenseSchema = z.object({
 });
 
 export const settleSplitSchema = z.object({
-  groupId: z.string().uuid("Gruppo non valido."),
+  groupId: groupIdSchema,
   expenseId: z.string().uuid("Spesa non valida."),
   splitId: z.string().uuid("Quota non valida."),
   payerMemberId: z.string().uuid("Pagatore non valido."),
