@@ -51,6 +51,13 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+type InvitableUserRow = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url?: string | null;
+};
+
 function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
 }
@@ -499,18 +506,18 @@ export async function getGroupWithDetails(groupId: string): Promise<GroupDetails
 
 export async function listUserInviteCandidates(): Promise<UserInviteCandidate[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, email, full_name")
-    .order("email", { ascending: true });
+  const { data, error } = await (supabase as typeof supabase & {
+    rpc: (
+      fn: string,
+      params?: Record<string, unknown>
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+  }).rpc("search_invitable_users", {
+    search_query: null
+  });
 
   if (error) throw new Error(error.message);
 
-  const rows = (data ?? []) as Array<{
-    id: string;
-    email: string;
-    full_name: string | null;
-  }>;
+  const rows = (data ?? []) as InvitableUserRow[];
 
   return rows.map((row) => ({
     id: row.id,
@@ -664,31 +671,36 @@ export async function addGroupMember(values: AddGroupMemberFormValues) {
     };
   } else {
     const normalizedEmail = normalizeEmail(values.email);
-    const { data: users, error: userError } = await supabase
-      .from("users")
-      .select("id, email, full_name")
-      .ilike("email", normalizedEmail)
-      .limit(2);
+    const { data: users, error: userError } = await (supabase as typeof supabase & {
+      rpc: (
+        fn: string,
+        params?: Record<string, unknown>
+      ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    }).rpc("search_invitable_users", { search_query: normalizedEmail });
 
     if (userError) {
       throw new Error(userError.message);
     }
 
-    if (!users || users.length === 0) {
+    const exactMatches = ((users ?? []) as InvitableUserRow[]).filter(
+      (user) => normalizeEmail(user.email) === normalizedEmail
+    );
+
+    if (exactMatches.length === 0) {
       throw new GroupExpensesServiceError(
         "Nessun utente dell'app trovato con questa email.",
         404
       );
     }
 
-    if (users.length > 1) {
+    if (exactMatches.length > 1) {
       throw new GroupExpensesServiceError(
         "Abbiamo trovato piu utenti con questa email. Seleziona un suggerimento dalla lista.",
         409
       );
     }
 
-    const appUser = users[0] as {
+    const appUser = exactMatches[0] as {
       id: string;
       email: string;
       full_name: string | null;
