@@ -26,22 +26,25 @@
 
 ### Cosa mostra
 
-- saldo mensile corrente;
-- totale entrate del mese;
-- totale spese del mese;
-- savings rate;
-- trend spese ultimi 7 giorni;
-- budget giornaliero consigliato;
+- daily budget centrato su "Puoi spendere oggi";
+- spendibile residuo del mese;
+- quota bloccata nel salvadanaio;
+- riserva prudenziale;
+- quota teorica protetta per i goal;
+- giorni residui;
 - top categorie di spesa;
 - stato sintetico dei saving goals;
+- overview compatta del salvadanaio;
 - attivita recente.
 
 ### Come calcola i dati
 
-- Usa solo transazioni `income` e `expense` del mese corrente.
+- Usa transazioni `income` e `expense` del mese corrente.
 - Esclude `transfer`.
-- Somma le entrate ricorrenti attive previste entro fine mese per stimare il budget spendibile.
-- Legge `monthly_budget_settings.target_savings` come target di risparmio.
+- Somma le entrate ricorrenti attive previste entro fine mese.
+- Sottrae il saldo del salvadanaio dal denaro spendibile.
+- Usa la media spese degli ultimi 3 mesi per la riserva prudenziale.
+- Protegge una quota teorica dei goal attivi in base alla priorita.
 - Prende fino a 4 categorie top per spesa.
 - Prende fino a 3 saving goals attivi o completati.
 - Prende fino a 6 movimenti recenti.
@@ -49,10 +52,10 @@
 ### Dettagli logici utili
 
 - Il grafico trend considera solo spese degli ultimi 7 giorni.
-- Il widget daily budget usa `expectedMonthlyIncome = income registrato + recurring income proiettato`.
-- Il riepilogo alto e stato allineato alla stessa logica prevista del budget giornaliero.
+- Il widget daily budget usa patrimonio liquido del mese, ricorrenze future, salvadanaio, riserva prudenziale e protezione goal.
 - La card saving goals usa `calculateSavingGoalMetrics` per progress, reachability e importo residuo.
-- La dashboard attuale e read-only: non esiste ancora un editor UI per `monthly_budget_settings`.
+- La dashboard non mostra piu il vecchio hero overview ridondante.
+- Il salvadanaio in dashboard e compatto e apre una sola modale di gestione con tab `Aggiungi`, `Svincola`, `Piano mensile`.
 - La dashboard ha una route API dedicata `/api/dashboard` e usa query cache per migliorare la navigazione tra tab.
 
 ## 3. Transazioni
@@ -131,7 +134,7 @@
 
 ### Funzionalita disponibili
 
-- Creazione di un goal con titolo, target, data obiettivo e priorita.
+- Creazione di un goal con titolo, target, priorita e descrizione opzionale.
 - Elenco goal con card dettagliate.
 - Aggiunta di contributi manuali.
 - Eliminazione goal.
@@ -142,25 +145,51 @@
 
 - percentuale di progresso;
 - importo residuo;
+- totale contributi manuali storici;
+- quota teorica mensile allocabile;
 - mesi residui;
 - contributo mensile necessario;
 - media mensile risparmiata;
-- raggiungibilita rispetto al ritmo attuale.
+- raggiungibilita rispetto al ritmo attuale;
+- health status (`in_linea`, `lento`, `bloccato`, `completato`).
 
 ### Comportamento
 
 - Ogni contributo viene salvato in `goal_contributions`.
 - Dopo il contributo, il service ricalcola `saved_so_far` sul goal.
-- I goal sono ordinati per priorita e data target.
+- I goal sono ordinati per priorita e vicinanza stimata al completamento.
 - La dashboard riutilizza gli stessi dati per mostrare un riepilogo sintetico.
 
 ### Vincoli attuali
 
-- Il form richiede obbligatoriamente una `targetDate`, anche se il database la supporta nullable.
+- Il form non richiede piu `targetDate`; se presente viene trattata come data desiderata.
 - Non esistono ancora edit, pause o cancel da UI, anche se il DB supporta piu stati.
 - I contributi non generano automaticamente una transazione collegata, anche se lo schema `goal_contributions` prevede `transaction_id`.
 
-## 6. Spese di gruppo
+## 6. Salvadanaio
+
+### Funzionalita disponibili
+
+- Saldo vincolato separato dai goal.
+- Movimenti manuali di aggiunta e svincolo.
+- Piano mensile automatico di allocazione.
+- Materializzazione automatica delle allocazioni mensili nel ledger dedicato.
+- Storico recente dei movimenti in dashboard.
+
+### Modello concettuale
+
+- Il salvadanaio fa parte del patrimonio totale.
+- Il saldo del salvadanaio non fa parte del denaro spendibile.
+- I goal non ricevono soldi automatici reali dal salvadanaio.
+- La dashboard usa il saldo salvadanaio come vincolo di liquidita.
+
+### UX attuale
+
+- In dashboard il salvadanaio e rappresentato da una card compatta.
+- Le azioni `Aggiungi`, `Svincola` e `Piano mensile` sono gestite da una sola modale a tab.
+- Il piano mensile non e piu mostrato come form lungo inline nella dashboard.
+
+## 7. Spese di gruppo
 
 ### Funzionalita disponibili
 
@@ -231,13 +260,14 @@
 - `/groups` mostra solo l'elenco gruppi.
 - `/groups/[groupId]` contiene dettagli, membri, spese, saldi e azioni del singolo gruppo.
 
-## 7. API interne
+## 8. API interne
 
 ### Stato attuale
 
 Esiste un set completo di route REST JSON parallelo alle Server Actions. Le API coprono:
 
 - dashboard;
+- piggy bank;
 - transazioni;
 - recurring incomes;
 - saving goals;
@@ -249,11 +279,15 @@ Esiste un set completo di route REST JSON parallelo alle Server Actions. Le API 
 - Le Server Actions restano presenti e utili per form server-driven, ma l'esperienza attuale usa spesso `fetch`.
 - Questo rende il progetto gia predisposto a future integrazioni mobile, agentiche o terze parti.
 
-## 8. Testing
+## 9. Testing
 
 ### Copertura presente
 
 - Test unitari di `calculateDailyBudget`.
+- Test su validazioni `piggy-bank`.
+- Test su `calculatePiggyBankBalance`.
+- Test su invalidazioni query per dominio.
+- Test sui calcoli e su alcuni flow service dei saving goals.
 
 ### Cosa manca
 

@@ -8,6 +8,8 @@ Il database pubblico Supabase modella sia finanza personale sia collaborazione d
 - `transactions`
 - `recurring_incomes`
 - `monthly_budget_settings`
+- `piggy_bank_settings`
+- `piggy_bank_movements`
 - `saving_goals`
 - `goal_contributions`
 - `groups`
@@ -23,6 +25,7 @@ Il database pubblico Supabase modella sia finanza personale sia collaborazione d
 - `recurrence_frequency`: `daily`, `weekly`, `monthly`, `quarterly`, `yearly`
 - `goal_status`: `active`, `completed`, `cancelled`, `paused`
 - `goal_priority`: `low`, `medium`, `high`
+- `piggy_bank_movement_type`: `manual_add`, `manual_release`, `auto_monthly_allocation`
 - `group_role`: `owner`, `admin`, `member`
 - `split_method`: `equal`, `custom`, `percentage`, `shares`
 - `shared_expense_status`: `draft`, `posted`, `settled`, `cancelled`
@@ -129,8 +132,48 @@ Campi chiave:
 
 Osservazioni:
 
-- la dashboard oggi legge soprattutto `target_savings`.
+- la dashboard non usa piu `target_savings` come concetto centrale del daily budget.
 - non esiste ancora una UI completa per creare o modificare queste impostazioni.
+
+### `piggy_bank_settings`
+
+Scopo:
+
+- configurazione del piano mensile automatico del salvadanaio.
+
+Campi chiave:
+
+- `user_id`
+- `auto_monthly_amount`
+- `is_auto_enabled`
+- `starts_on_month`
+
+Osservazioni:
+
+- il record e unico per utente.
+- `starts_on_month` viene normalizzato al primo giorno del mese.
+- la UI dashboard lo gestisce via modale dedicata.
+
+### `piggy_bank_movements`
+
+Scopo:
+
+- ledger storico dei movimenti del salvadanaio.
+
+Campi chiave:
+
+- `user_id`
+- `movement_type`
+- `amount`
+- `movement_date`
+- `note`
+- `auto_instance_key`
+
+Osservazioni:
+
+- il saldo corrente viene calcolato dal ledger, non da un campo denormalizzato.
+- `auto_instance_key` evita duplicati nelle allocazioni automatiche mensili.
+- i movimenti del salvadanaio non vivono in `transactions`.
 
 ## Saving goals
 
@@ -177,6 +220,7 @@ Osservazioni:
 - attualmente `transaction_id` non viene valorizzato dal codice applicativo.
 - il totale del goal viene mantenuto aggiornando `saving_goals.saved_so_far`.
 - l'eliminazione di un goal deve considerare le contribution collegate; il codice applicativo oggi mantiene la coerenza tramite delete orchestrata dal service.
+- `target_date` e ancora presente a schema ma non e piu il centro del dominio lato UI.
 
 ## Gruppi e spese condivise
 

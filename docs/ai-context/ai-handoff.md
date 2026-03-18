@@ -17,13 +17,14 @@
 - autenticazione e protezione sessione;
 - CRUD transazioni;
 - ricorrenze con deduplica;
-- saving goals con metriche;
+- saving goals con metriche, forecast e priorita;
+- salvadanaio con ledger dedicato, movimenti manuali e piano mensile automatico;
 - gruppi con guest, split, settlement, delete e sync su transazioni;
-- dashboard aggregata con cache query dedicata.
+- dashboard aggregata con cache query dedicata e daily budget centrato su "quanto puoi spendere oggi".
 
 ### Parzialmente sviluppato
 
-- budget mensile: schema esiste, dashboard lo legge, ma manca una vera UX di gestione;
+- budget mensile legacy: schema esiste ma non e piu il fulcro del daily budget;
 - stati avanzati dei goal: il DB li supporta, la UI quasi no;
 - split method avanzati: previsti a schema, non ancora implementati lato prodotto;
 - tipo `transfer` per transazioni: supportato a DB ma non a livello UI/validation;
@@ -51,6 +52,10 @@ Molte mutazioni esistono in entrambi i formati. Prima di rimuovere uno dei due l
 
 Le viste principali usano TanStack Query con invalidazione per dominio e sync cross-tab. Se si introduce una nuova mutazione che impatta dashboard, transazioni, goal o gruppi, va quasi sempre aggiornata anche la strategia di invalidazione.
 
+Nota aggiornata:
+
+- per i domini principali l'invalidazione locale e cross-tab passa da una mappa condivisa di query key, non da logiche duplicate sparse nei workspace.
+
 ### 6. Directory utenti per gruppi
 
 La ricerca e l'arricchimento dei profili gruppo non leggono piu direttamente `public.users`. Dipendono da funzioni SQL in `supabase/user-directory.sql`. Se manca l'applicazione di quel file sul database, invite e nomi profilo si rompono.
@@ -59,11 +64,16 @@ La ricerca e l'arricchimento dei profili gruppo non leggono piu direttamente `pu
 
 Header e bottom navigation mobile usano classi CSS basate su `env(safe-area-inset-*)`. Se si tocca la shell o il spacing globale, controllare sempre la resa su iPhone in modalita PWA, non solo in Safari normale.
 
+### 8. Dashboard snella
+
+La dashboard non deve diventare una pagina di configurazione. I form lunghi o multi-step, soprattutto per il salvadanaio, dovrebbero stare in modali o viste dedicate.
+
 ## Debito tecnico e opportunita ad alto valore
 
 ### Priorita alta
 
-- aggiungere gestione completa `monthly_budget_settings`;
+- consolidare ulteriormente la UX mobile della dashboard;
+- aggiungere test di integrazione service/API per piggy bank;
 - ampliare copertura test su servizi e calcoli di gruppo;
 - introdurre edit dove mancano;
 - centralizzare formattazione valuta/date e costanti condivise;
@@ -92,6 +102,7 @@ Header e bottom navigation mobile usano classi CSS basate su `env(safe-area-inse
 - verificare dashboard con mese vuoto;
 - verificare dashboard con entrate ricorrenti future nel mese.
 - verificare invalidazione query `dashboard` dopo mutazioni in altri domini.
+- verificare che la dashboard non reintroduca blocchi ridondanti o form lunghi inline.
 
 ### Se tocchi recurring incomes
 
@@ -105,6 +116,14 @@ Header e bottom navigation mobile usano classi CSS basate su `env(safe-area-inse
 - testare completamento automatico;
 - testare progress e reachability con date limite passate e future.
 - testare delete goal con contribution collegate.
+- ricordare che `targetDate` e opzionale e non piu centrale lato prodotto.
+
+### Se tocchi piggy bank
+
+- testare saldo da movimenti manuali e auto monthly;
+- testare svincolo oltre saldo disponibile;
+- testare invalidazioni `piggy-bank`, `dashboard`, `saving-goals`;
+- verificare coerenza UX tra card dashboard e modale di gestione.
 
 ### Se tocchi group expenses
 

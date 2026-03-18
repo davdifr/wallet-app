@@ -65,6 +65,13 @@ I workspace sono:
 - `GroupsWorkspace`
 - `GroupDetailWorkspace`
 
+### Linee guida UI attuali
+
+- la dashboard deve restare focalizzata su `quanto puoi spendere oggi`;
+- i form lunghi o multi-step non dovrebbero vivere inline nella dashboard;
+- per azioni puntuali si preferiscono modali coerenti con il resto dell'app;
+- la shell deve restare sicura in PWA iPhone standalone, senza rompere safe area, header e bottom nav.
+
 ## Layer servizi
 
 I service sono la vera sede della logica di business.
@@ -80,6 +87,8 @@ I service sono la vera sede della logica di business.
 
 - `services/auth/*`
 - `services/dashboard/dashboard-service.ts`
+- `services/budget/budget-service.ts`
+- `services/piggy-bank/piggy-bank-service.ts`
 - `services/transactions/transactions-service.ts`
 - `services/recurring-incomes/recurring-income-service.ts`
 - `services/saving-goals/saving-goals-service.ts`
@@ -106,6 +115,14 @@ Questo doppio layer `page server-side + workspace client + API` rende l'app:
 - piu consistente tra pagine e tab grazie a query cache condivisa;
 - semplice da estendere con consumer esterni o agenti AI che operano via HTTP interno.
 
+### API di dominio oggi presenti
+
+Oltre ai domini storici, l'app espone anche:
+
+- `app/api/piggy-bank/*` per overview, movimenti manuali e piano mensile;
+- `app/api/dashboard` con il payload aggregato della home;
+- `app/api/saving-goals/[id]/contributions` per contributi manuali espliciti.
+
 ## Stato client e caching
 
 L'app non usa uno store globale custom per i dati server. Usa invece un approccio server-state:
@@ -114,6 +131,7 @@ L'app non usa uno store globale custom per i dati server. Usa invece un approcci
 - TanStack Query per cache per dominio;
 - chiavi centralizzate in `lib/query/query-keys.ts`;
 - invalidazione coordinata dopo mutazioni;
+- helper condiviso per invalidare i domini dipendenti dalle mutazioni piu comuni;
 - sync cross-tab via `BroadcastChannel` con fallback `storage`;
 - prefetch di route e dati nelle tab principali.
 
@@ -155,14 +173,25 @@ Le validazioni attuali riflettono la UI corrente, non tutto il potenziale dello 
 - recurring incomes: niente `daily` o `quarterly`;
 - group expenses: solo `equal` e `custom`.
 
+Sono presenti anche validazioni dedicate per:
+
+- salvadanaio (`movimenti` e `piano mensile`);
+- goal con `targetDate` opzionale lato UI;
+- vincoli di date mensili come il primo giorno del mese per l'attivazione dei piani automatici.
+
 ## Calcoli di dominio
 
 I moduli in `lib/` contengono logica pura riutilizzabile e testabile.
 
 ### Moduli rilevanti
 
-- `lib/budget/daily-budget.ts`: formula del budget giornaliero.
-- `lib/saving-goals/calculations.ts`: metriche di raggiungibilita dei goal.
+- `lib/budget/daily-budget.ts`: formula del budget giornaliero centrata su spendibile, salvadanaio, riserva prudenziale e protezione goal.
+- `lib/budget/goal-protection.ts`: distribuzione teorica della capacita verso i goal in base alla priorita.
+- `lib/budget/spending-pace.ts`: ritmo medio di spesa sugli ultimi 3 mesi chiusi.
+- `lib/piggy-bank/balance.ts`: saldo affidabile del salvadanaio a partire dai movimenti ledger.
+- `lib/saving-goals/calculations.ts`: metriche di progresso reale dei goal.
+- `lib/saving-goals/forecast.ts`: stima di mesi e data di completamento dei goal.
+- `lib/saving-goals/sorting.ts`: ordinamento per priorita e vicinanza stimata al completamento.
 - `lib/group-expenses/calculations.ts`: split, parsing custom values e saldo di gruppo.
 
 ## Pattern di stato lato client
