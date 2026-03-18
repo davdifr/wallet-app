@@ -12,7 +12,7 @@ export default async function DashboardPage() {
     const data = await getDashboardData();
 
     return (
-      <div className="space-y-5 pb-3 sm:space-y-6">
+      <div className="space-y-5 pb-12 sm:space-y-6">
         <MonthlyOverviewCard
           balance={data.balanceLabel}
           income={data.incomeLabel}

@@ -52,7 +52,7 @@ export function AppShell({ children, user }: AppShellProps) {
         </div>
       </header>
 
-      <div className="container flex gap-6 py-6 pb-24 lg:pb-6">
+      <div className="container flex gap-6 py-6 pb-32 lg:pb-6">
         <aside className="hidden w-64 shrink-0 lg:block">
           <SidebarNav />
         </aside>

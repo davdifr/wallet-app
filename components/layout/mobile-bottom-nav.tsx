@@ -11,7 +11,7 @@ export function MobileBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-30 rounded-[1.6rem] border border-white/80 bg-white/95 p-1.5 shadow-soft backdrop-blur lg:hidden">
+    <nav className="fixed inset-x-2 bottom-2 z-30 rounded-[1.35rem] border border-white/80 bg-white/95 p-1 shadow-soft backdrop-blur lg:hidden">
       <ul className="grid grid-cols-5 gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -22,7 +22,7 @@ export function MobileBottomNav() {
               <Link
                 href={item.href}
                 className={cn(
-                  "flex min-h-12 flex-col items-center justify-center gap-1 rounded-[1.15rem] px-1 py-2 text-center text-[10px] font-medium leading-none transition",
+                  "flex min-h-11 flex-col items-center justify-center gap-1 rounded-[1rem] px-1 py-2 text-center text-[10px] font-medium leading-none transition",
                   active
                     ? "bg-slate-950 text-white shadow-sm"
                     : "text-slate-500 hover:bg-slate-100 hover:text-slate-950"

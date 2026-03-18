@@ -286,12 +286,13 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
       .filter((transaction) => transaction.transaction_type === "expense")
       .reduce((sum, transaction) => sum + transaction.amount, 0)
   );
-  const monthBalance = roundCurrency(monthlyIncome - monthlyExpenses);
   const savingsTarget = monthlyBudget?.target_savings ?? 0;
   const projectedRecurringIncome = getProjectedRecurringIncomeForMonth(
     recurringIncomeRows,
     monthEnd
   );
+  const expectedMonthlyIncome = roundCurrency(monthlyIncome + projectedRecurringIncome);
+  const projectedMonthBalance = roundCurrency(expectedMonthlyIncome - monthlyExpenses);
 
   const topCategories = Array.from(
     transactionRows
@@ -351,14 +352,14 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
   }));
 
   return {
-    balanceLabel: formatCurrency(monthBalance),
-    incomeLabel: formatCurrency(monthlyIncome),
+    balanceLabel: formatCurrency(projectedMonthBalance),
+    incomeLabel: formatCurrency(expectedMonthlyIncome),
     expensesLabel: formatCurrency(monthlyExpenses),
-    savingsRateLabel: `${Math.round(getSavingsRate(monthlyIncome, monthlyExpenses))}%`,
+    savingsRateLabel: `${Math.round(getSavingsRate(expectedMonthlyIncome, monthlyExpenses))}%`,
     savingsTargetLabel: formatCurrency(savingsTarget),
     trend: buildTrend(transactionRows, today),
     dailyBudgetInput: {
-      expectedMonthlyIncome: roundCurrency(monthlyIncome + projectedRecurringIncome),
+      expectedMonthlyIncome,
       registeredMonthlyExpenses: monthlyExpenses,
       monthlySavingsTarget: savingsTarget,
       currentDate
