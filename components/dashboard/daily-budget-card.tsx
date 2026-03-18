@@ -145,7 +145,7 @@ export function DailyBudgetCard({ result, totalWealth }: DailyBudgetCardProps) {
 
           <div className="rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-4">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-              Da tenere d'occhio
+              Da tenere d&apos;occhio
             </p>
             {warnings.length === 0 ? (
               <p className="mt-3 text-sm text-slate-600">
