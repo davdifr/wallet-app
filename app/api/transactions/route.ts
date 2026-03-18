@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { transactionSchema } from "@/lib/validations/transaction";
 import { getUser } from "@/services/auth/get-user";
+import { materializeRecurringIncomes } from "@/services/recurring-incomes/recurring-income-service";
 import {
   createTransaction,
   listTransactionCategories,
@@ -26,6 +27,8 @@ export async function GET(request: Request) {
   };
 
   try {
+    await materializeRecurringIncomes();
+
     const [transactions, categories, availableMonths] = await Promise.all([
       listTransactions(filters),
       listTransactionCategories(),

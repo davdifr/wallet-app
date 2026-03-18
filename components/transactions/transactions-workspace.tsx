@@ -1,12 +1,17 @@
 "use client";
 
-import { startTransition, useState } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
+import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { TransactionsList } from "@/components/transactions/transactions-list";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { fetchJson } from "@/lib/query/fetch-json";
+import { queryKeys } from "@/lib/query/query-keys";
+import { publishSyncEvent } from "@/lib/query/sync-events";
 import type {
   Transaction,
   TransactionFilters,
@@ -28,67 +33,22 @@ type TransactionsApiResponse = {
   transactions: Transaction[];
 };
 
-function mergeStringValue(values: string[], nextValue: string) {
-  const trimmedValue = nextValue.trim();
+function buildTransactionsSearchParams(filters: TransactionFilters) {
+  const searchParams = new URLSearchParams();
 
-  if (!trimmedValue) {
-    return values;
+  if (filters.month) {
+    searchParams.set("month", filters.month);
   }
 
-  return Array.from(new Set([...values, trimmedValue])).sort((left, right) =>
-    left.localeCompare(right)
-  );
-}
-
-function syncAvailableMonths(months: string[], date: string) {
-  const nextMonth = date.slice(0, 7);
-
-  if (!nextMonth) {
-    return months;
+  if (filters.category) {
+    searchParams.set("category", filters.category);
   }
 
-  return Array.from(new Set([...months, nextMonth])).sort((left, right) =>
-    right.localeCompare(left)
-  );
-}
-
-function transactionMatchesFilters(
-  transaction: Transaction,
-  filters: TransactionFilters
-) {
-  if (filters.category && transaction.category !== filters.category) {
-    return false;
+  if (filters.type) {
+    searchParams.set("type", filters.type);
   }
 
-  if (filters.type && filters.type !== "all" && transaction.type !== filters.type) {
-    return false;
-  }
-
-  if (filters.month && transaction.date.slice(0, 7) !== filters.month) {
-    return false;
-  }
-
-  return true;
-}
-
-function sortTransactions(transactions: Transaction[]) {
-  return [...transactions].sort((left, right) => {
-    if (left.date !== right.date) {
-      return right.date.localeCompare(left.date);
-    }
-
-    return right.createdAt.localeCompare(left.createdAt);
-  });
-}
-
-async function readResponse<T>(response: Response): Promise<T> {
-  const data = (await response.json()) as T & { message?: string };
-
-  if (!response.ok) {
-    throw new Error(data.message ?? "Richiesta non riuscita.");
-  }
-
-  return data;
+  return searchParams;
 }
 
 export function TransactionsWorkspace({
@@ -98,190 +58,127 @@ export function TransactionsWorkspace({
   initialFilters,
   initialTransactions
 }: TransactionsWorkspaceProps) {
-  const [transactions, setTransactions] = useState(initialTransactions);
   const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
-  const [categories, setCategories] = useState(initialCategories);
-  const [availableMonths, setAvailableMonths] = useState(initialAvailableMonths);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(
     initialEditingTransaction
   );
   const [isComposerOpen, setIsComposerOpen] = useState(Boolean(initialEditingTransaction));
   const [listError, setListError] = useState<string | null>(null);
-  const [isFiltering, setIsFiltering] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const syncSourceId = useSyncSourceId();
+  const initialData = useMemo<TransactionsApiResponse>(
+    () => ({
+      transactions: initialTransactions,
+      categories: initialCategories,
+      availableMonths: initialAvailableMonths
+    }),
+    [initialAvailableMonths, initialCategories, initialTransactions]
+  );
+
+  const transactionsQuery = useQuery({
+    queryKey: queryKeys.transactions.list(filters),
+    queryFn: () =>
+      fetchJson<TransactionsApiResponse>(
+        `/api/transactions?${buildTransactionsSearchParams(filters).toString()}`,
+        {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store"
+        }
+      ),
+    initialData:
+      filters.month === initialFilters.month &&
+      filters.category === initialFilters.category &&
+      filters.type === initialFilters.type
+        ? initialData
+        : undefined,
+    placeholderData: (previousData) => previousData
+  });
+
+  const transactionData = transactionsQuery.data ?? initialData;
+
+  const saveTransactionMutation = useMutation({
+    mutationFn: async (values: TransactionFormValues) => {
+      const url = values.id ? `/api/transactions/${values.id}` : "/api/transactions";
+      const method = values.id ? "PATCH" : "POST";
+
+      return fetchJson<{ transaction: Transaction }>(url, {
+        method,
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values)
+      });
+    }
+  });
+
+  const deleteTransactionMutation = useMutation({
+    mutationFn: async (transactionId: string) =>
+      fetchJson<{ transaction: Transaction }>(`/api/transactions/${transactionId}`, {
+        method: "DELETE",
+        credentials: "same-origin"
+      })
+  });
 
   async function refreshTransactions(nextFilters: TransactionFilters) {
-    setIsFiltering(true);
     setListError(null);
+    setFilters(nextFilters);
+  }
 
-    try {
-      const searchParams = new URLSearchParams();
+  async function syncTransactionDomain() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
+    ]);
 
-      if (nextFilters.month) {
-        searchParams.set("month", nextFilters.month);
-      }
-
-      if (nextFilters.category) {
-        searchParams.set("category", nextFilters.category);
-      }
-
-      if (nextFilters.type) {
-        searchParams.set("type", nextFilters.type);
-      }
-
-      const response = await fetch(`/api/transactions?${searchParams.toString()}`, {
-        method: "GET",
-        credentials: "same-origin",
-        headers: {
-          Accept: "application/json"
-        },
-        cache: "no-store"
-      });
-
-      const data = await readResponse<TransactionsApiResponse>(response);
-      setTransactions(data.transactions);
-      setCategories(data.categories);
-      setAvailableMonths(data.availableMonths);
-      setFilters(nextFilters);
-    } catch (error) {
-      setListError(
-        error instanceof Error
-          ? error.message
-          : "Impossibile aggiornare le transazioni."
-      );
-    } finally {
-      setIsFiltering(false);
-    }
+    publishSyncEvent({
+      id: crypto.randomUUID(),
+      domain: "transactions",
+      sourceId: syncSourceId,
+      timestamp: Date.now()
+    });
   }
 
   async function handleSubmit(values: TransactionFormValues): Promise<TransactionFormState> {
-    setIsSubmitting(true);
     setListError(null);
 
-    const optimisticTransaction: Transaction = {
-      id: values.id ?? `temp-${crypto.randomUUID()}`,
-      amount: Number(values.amount),
-      date: values.date,
-      category: values.category,
-      note: values.note,
-      source: values.source,
-      type: values.type,
-      createdAt: new Date().toISOString()
-    };
-
-    const previousTransactions = transactions;
-    const previousEditingTransaction = editingTransaction;
-    const shouldShow = transactionMatchesFilters(optimisticTransaction, filters);
-
-    if (values.id) {
-      setTransactions((current) =>
-        sortTransactions(
-          current
-            .map((item) => (item.id === values.id ? optimisticTransaction : item))
-            .filter((item) => (item.id === values.id ? shouldShow : true))
-        )
-      );
-    } else if (shouldShow) {
-      setTransactions((current) => sortTransactions([optimisticTransaction, ...current]));
-    }
-
-    setCategories((current) => mergeStringValue(current, values.category));
-    setAvailableMonths((current) => syncAvailableMonths(current, values.date));
-
     try {
-      const response = await fetch(
-        values.id ? `/api/transactions/${values.id}` : "/api/transactions",
-        {
-          method: values.id ? "PATCH" : "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json"
-          },
-          body: JSON.stringify(values)
-        }
-      );
-
-      const data = await readResponse<{ transaction: Transaction } & TransactionFormState>(
-        response
-      );
-      const savedTransaction = data.transaction;
-
-      setTransactions((current) => {
-        const withoutOptimistic = current.filter(
-          (item) => item.id !== optimisticTransaction.id && item.id !== savedTransaction.id
-        );
-
-        if (!transactionMatchesFilters(savedTransaction, filters)) {
-          return sortTransactions(withoutOptimistic);
-        }
-
-        return sortTransactions([savedTransaction, ...withoutOptimistic]);
-      });
-
+      await saveTransactionMutation.mutateAsync(values);
       setEditingTransaction(null);
       setIsComposerOpen(false);
-
-      startTransition(() => {
-        void refreshTransactions(filters);
-      });
+      await syncTransactionDomain();
 
       return {
         success: true,
         message: values.id ? "Transazione aggiornata." : "Transazione creata."
       };
     } catch (error) {
-      setTransactions(previousTransactions);
-      setEditingTransaction(previousEditingTransaction);
-
       return {
         success: false,
         message:
           error instanceof Error ? error.message : "Impossibile salvare la transazione."
       };
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
   async function handleDelete(transactionId: string) {
-    const previousTransactions = transactions;
-    const deletedTransaction = previousTransactions.find((item) => item.id === transactionId);
-
-    if (!deletedTransaction) {
-      return;
-    }
-
     setDeletingId(transactionId);
     setListError(null);
-    setTransactions((current) => current.filter((item) => item.id !== transactionId));
-
-    if (editingTransaction?.id === transactionId) {
-      setEditingTransaction(null);
-    }
 
     try {
-      const response = await fetch(`/api/transactions/${transactionId}`, {
-        method: "DELETE",
-        credentials: "same-origin",
-        headers: {
-          Accept: "application/json"
-        }
-      });
+      await deleteTransactionMutation.mutateAsync(transactionId);
 
-      await readResponse<{ transaction: Transaction }>(response);
+      if (editingTransaction?.id === transactionId) {
+        setEditingTransaction(null);
+      }
+
+      await syncTransactionDomain();
     } catch (error) {
-      setTransactions(previousTransactions);
       setListError(
         error instanceof Error
           ? error.message
           : "Impossibile eliminare la transazione."
       );
-
-      if (editingTransaction?.id === transactionId) {
-        setEditingTransaction(deletedTransaction);
-      }
     } finally {
       setDeletingId(null);
     }
@@ -321,14 +218,20 @@ export function TransactionsWorkspace({
         </div>
       ) : null}
 
+      {transactionsQuery.error instanceof Error ? (
+        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          {transactionsQuery.error.message}
+        </div>
+      ) : null}
+
       <section>
         <TransactionsList
-          availableMonths={availableMonths}
-          categories={categories}
+          availableMonths={transactionData.availableMonths}
+          categories={transactionData.categories}
           deletingId={deletingId}
           filters={filters}
-          isLoading={isFiltering}
-          transactions={transactions}
+          isLoading={transactionsQuery.isFetching}
+          transactions={transactionData.transactions}
           onApplyFilters={(nextFilters) => {
             void refreshTransactions(nextFilters);
           }}
@@ -358,9 +261,9 @@ export function TransactionsWorkspace({
         }
       >
         <TransactionForm
-          categories={categories}
+          categories={transactionData.categories}
           initialValues={editingTransaction}
-          isSubmitting={isSubmitting}
+          isSubmitting={saveTransactionMutation.isPending}
           onCancelEdit={() => {
             setEditingTransaction(null);
             setIsComposerOpen(false);

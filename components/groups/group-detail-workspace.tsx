@@ -3,14 +3,19 @@
 import Link from "next/link";
 import { ArrowLeft, Coins, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
+import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { GroupExpensesSection } from "@/components/groups/group-expenses-section";
 import { GroupMembersSection } from "@/components/groups/group-members-section";
 import { GroupSettlementsSection } from "@/components/groups/group-settlements-section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { fetchJson } from "@/lib/query/fetch-json";
+import { queryKeys } from "@/lib/query/query-keys";
+import { publishSyncEvent } from "@/lib/query/sync-events";
 import type {
   AddGroupMemberFormValues,
   CreateSharedExpenseFormValues,
@@ -33,25 +38,14 @@ type GroupDetailWorkspaceProps = {
   initialInviteCandidates: UserInviteCandidate[];
 };
 
-async function readResponse<T>(response: Response): Promise<T> {
-  const data = (await response.json()) as T & { message?: string };
-
-  if (!response.ok) {
-    throw new Error(data.message ?? "Richiesta non riuscita.");
-  }
-
-  return data;
-}
-
 export function GroupDetailWorkspace({
   currentUserId: initialCurrentUserId,
   initialGroup,
   initialInviteCandidates
 }: GroupDetailWorkspaceProps) {
   const router = useRouter();
-  const [group, setGroup] = useState(initialGroup);
-  const [inviteCandidates, setInviteCandidates] = useState(initialInviteCandidates);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(initialCurrentUserId);
+  const queryClient = useQueryClient();
+  const syncSourceId = useSyncSourceId();
   const [pageError, setPageError] = useState<string | null>(null);
   const [pageMessage, setPageMessage] = useState<string | null>(null);
   const [pendingAddMemberGroupId, setPendingAddMemberGroupId] = useState<string | null>(null);
@@ -63,19 +57,41 @@ export function GroupDetailWorkspace({
   const [pendingSettleSplitId, setPendingSettleSplitId] = useState<string | null>(null);
   const [pendingAcceptSettlementId, setPendingAcceptSettlementId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const initialData = useMemo<GroupApiResponse>(
+    () => ({
+      currentUserId: initialCurrentUserId,
+      group: initialGroup,
+      inviteCandidates: initialInviteCandidates
+    }),
+    [initialCurrentUserId, initialGroup, initialInviteCandidates]
+  );
 
-  async function reloadGroup() {
-    const response = await fetch(`/api/groups/${group.group.id}`, {
-      method: "GET",
-      credentials: "same-origin",
-      headers: { Accept: "application/json" },
-      cache: "no-store"
+  const groupQuery = useQuery({
+    queryKey: queryKeys.groups.detail(initialGroup.group.id),
+    queryFn: () =>
+      fetchJson<GroupApiResponse>(`/api/groups/${initialGroup.group.id}`, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store"
+      }),
+    initialData
+  });
+
+  const groupData = groupQuery.data ?? initialData;
+  const { currentUserId, group, inviteCandidates } = groupData;
+
+  async function syncGroupsDomain() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.groups.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.groups.detail(group.group.id) })
+    ]);
+
+    publishSyncEvent({
+      id: crypto.randomUUID(),
+      domain: "groups",
+      sourceId: syncSourceId,
+      timestamp: Date.now()
     });
-
-    const data = await readResponse<GroupApiResponse>(response);
-    setGroup(data.group);
-    setInviteCandidates(data.inviteCandidates);
-    setCurrentUserId(data.currentUserId);
   }
 
   async function handleAddMember(values: AddGroupMemberFormValues): Promise<GroupFormState> {
@@ -84,18 +100,15 @@ export function GroupDetailWorkspace({
     setPageMessage(null);
 
     try {
-      const response = await fetch(`/api/groups/${values.groupId}/members`, {
+      await fetchJson<{ success: boolean }>(`/api/groups/${values.groupId}/members`, {
         method: "POST",
         credentials: "same-origin",
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(values)
       });
-
-      await readResponse<{ success: boolean }>(response);
-      await reloadGroup();
+      await syncGroupsDomain();
       return { success: true, message: "Membro aggiunto." };
     } catch (error) {
       return {
@@ -115,18 +128,15 @@ export function GroupDetailWorkspace({
     setPageMessage(null);
 
     try {
-      const response = await fetch(`/api/groups/${values.groupId}/expenses`, {
+      await fetchJson<{ success: boolean }>(`/api/groups/${values.groupId}/expenses`, {
         method: "POST",
         credentials: "same-origin",
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(values)
       });
-
-      await readResponse<{ success: boolean }>(response);
-      await reloadGroup();
+      await syncGroupsDomain();
       return { success: true, message: "Spesa condivisa creata." };
     } catch (error) {
       return {
@@ -144,14 +154,11 @@ export function GroupDetailWorkspace({
     setPageMessage(null);
 
     try {
-      const response = await fetch(`/api/groups/${group.group.id}/members/${memberId}`, {
+      await fetchJson<{ success?: boolean }>(`/api/groups/${group.group.id}/members/${memberId}`, {
         method: "DELETE",
-        credentials: "same-origin",
-        headers: { Accept: "application/json" }
+        credentials: "same-origin"
       });
-
-      await readResponse<{ success?: boolean }>(response);
-      await reloadGroup();
+      await syncGroupsDomain();
       setPageMessage("Partecipante rimosso dal gruppo.");
       return { success: true, message: "Partecipante rimosso." };
     } catch (error) {
@@ -173,18 +180,18 @@ export function GroupDetailWorkspace({
     setPageMessage(null);
 
     try {
-      const response = await fetch("/api/groups/settlements", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify(values)
-      });
-
-      const data = await readResponse<{ result: { status: "pending" | "completed" } }>(response);
-      await reloadGroup();
+      const data = await fetchJson<{ result: { status: "pending" | "completed" } }>(
+        "/api/groups/settlements",
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(values)
+        }
+      );
+      await syncGroupsDomain();
       return {
         success: true,
         message:
@@ -208,14 +215,11 @@ export function GroupDetailWorkspace({
     setPageMessage(null);
 
     try {
-      const response = await fetch(`/api/groups/settlements/${settlementId}/accept`, {
+      await fetchJson<{ success: boolean }>(`/api/groups/settlements/${settlementId}/accept`, {
         method: "POST",
-        credentials: "same-origin",
-        headers: { Accept: "application/json" }
+        credentials: "same-origin"
       });
-
-      await readResponse<{ success: boolean }>(response);
-      await reloadGroup();
+      await syncGroupsDomain();
       return { success: true, message: "Rimborso accettato." };
     } catch (error) {
       return {
@@ -234,13 +238,17 @@ export function GroupDetailWorkspace({
     setPageMessage(null);
 
     try {
-      const response = await fetch(`/api/groups/${group.group.id}`, {
+      await fetchJson<{ group: GroupType }>(`/api/groups/${group.group.id}`, {
         method: "DELETE",
-        credentials: "same-origin",
-        headers: { Accept: "application/json" }
+        credentials: "same-origin"
       });
-
-      await readResponse<{ group: GroupType }>(response);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.groups.all });
+      publishSyncEvent({
+        id: crypto.randomUUID(),
+        domain: "groups",
+        sourceId: syncSourceId,
+        timestamp: Date.now()
+      });
       router.push("/groups");
       router.refresh();
     } catch (error) {
@@ -318,6 +326,12 @@ export function GroupDetailWorkspace({
       {pageError ? (
         <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
           {pageError}
+        </div>
+      ) : null}
+
+      {groupQuery.error instanceof Error ? (
+        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          {groupQuery.error.message}
         </div>
       ) : null}
 

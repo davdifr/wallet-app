@@ -1,6 +1,7 @@
 import { TransactionsWorkspace } from "@/components/transactions/transactions-workspace";
 import { NoticeCard } from "@/components/ui/notice-card";
 import { getSupabasePageErrorMessage } from "@/lib/supabase/error-message";
+import { materializeRecurringIncomes } from "@/services/recurring-incomes/recurring-income-service";
 import {
   getTransactionById,
   listTransactionCategories,
@@ -36,6 +37,8 @@ export default async function TransactionsPage({
   let pageError: string | null = null;
 
   try {
+    await materializeRecurringIncomes();
+
     [transactions, categories, availableMonths, editingTransaction] = await Promise.all([
       listTransactions(filters),
       listTransactionCategories(),

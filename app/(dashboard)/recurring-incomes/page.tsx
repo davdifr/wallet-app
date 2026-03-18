@@ -1,10 +1,14 @@
 import { RecurringIncomesWorkspace } from "@/components/recurring-incomes/recurring-incomes-workspace";
 import { NoticeCard } from "@/components/ui/notice-card";
 import { getSupabasePageErrorMessage } from "@/lib/supabase/error-message";
-import { listRecurringIncomes } from "@/services/recurring-incomes/recurring-income-service";
+import {
+  listRecurringIncomes,
+  materializeRecurringIncomes
+} from "@/services/recurring-incomes/recurring-income-service";
 
 export default async function RecurringIncomesPage() {
   try {
+    await materializeRecurringIncomes();
     const recurringIncomes = await listRecurringIncomes();
     return <RecurringIncomesWorkspace initialRecurringIncomes={recurringIncomes} />;
   } catch (error) {

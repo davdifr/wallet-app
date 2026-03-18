@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
+import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { CreateGroupForm } from "@/components/groups/create-group-form";
 import { GroupsList } from "@/components/groups/groups-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { fetchJson } from "@/lib/query/fetch-json";
+import { queryKeys } from "@/lib/query/query-keys";
+import { publishSyncEvent } from "@/lib/query/sync-events";
 import type { CreateGroupFormValues, GroupDetails, GroupFormState } from "@/types/group-expenses";
 
 type GroupsApiResponse = {
+  currentUserId: string | null;
   groups: GroupDetails[];
 };
 
@@ -18,54 +24,56 @@ type GroupsWorkspaceProps = {
   initialGroups: GroupDetails[];
 };
 
-async function readResponse<T>(response: Response): Promise<T> {
-  const data = (await response.json()) as T & { message?: string };
-
-  if (!response.ok) {
-    throw new Error(data.message ?? "Richiesta non riuscita.");
-  }
-
-  return data;
-}
-
 export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
-  const [groups, setGroups] = useState(initialGroups);
   const [pageError, setPageError] = useState<string | null>(null);
   const [pageMessage, setPageMessage] = useState<string | null>(null);
-  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const syncSourceId = useSyncSourceId();
+  const initialData = useMemo(
+    () => ({ currentUserId: null, groups: initialGroups }),
+    [initialGroups]
+  );
 
-  async function reloadGroups() {
-    const response = await fetch("/api/groups", {
-      method: "GET",
-      credentials: "same-origin",
-      headers: { Accept: "application/json" },
-      cache: "no-store"
+  const groupsQuery = useQuery({
+    queryKey: queryKeys.groups.all,
+    queryFn: () =>
+      fetchJson<GroupsApiResponse>("/api/groups", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store"
+      }),
+    initialData
+  });
+
+  const createGroupMutation = useMutation({
+    mutationFn: async (values: CreateGroupFormValues) =>
+      fetchJson<{ success: boolean }>("/api/groups", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values)
+      })
+  });
+
+  async function syncGroupsDomain() {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.groups.all });
+    publishSyncEvent({
+      id: crypto.randomUUID(),
+      domain: "groups",
+      sourceId: syncSourceId,
+      timestamp: Date.now()
     });
-
-    const data = await readResponse<GroupsApiResponse>(response);
-    setGroups(data.groups);
   }
 
   async function handleCreateGroup(values: CreateGroupFormValues): Promise<GroupFormState> {
-    setIsCreatingGroup(true);
     setPageError(null);
     setPageMessage(null);
 
     try {
-      const response = await fetch("/api/groups", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify(values)
-      });
-
-      await readResponse<{ success: boolean }>(response);
-      await reloadGroups();
+      await createGroupMutation.mutateAsync(values);
       setIsCreateModalOpen(false);
+      await syncGroupsDomain();
 
       return {
         success: true,
@@ -76,8 +84,6 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
         success: false,
         message: error instanceof Error ? error.message : "Impossibile creare il gruppo."
       };
-    } finally {
-      setIsCreatingGroup(false);
     }
   }
 
@@ -117,6 +123,12 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
         </div>
       ) : null}
 
+      {groupsQuery.error instanceof Error ? (
+        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          {groupsQuery.error.message}
+        </div>
+      ) : null}
+
       {pageMessage ? (
         <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
           {pageMessage}
@@ -124,7 +136,7 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
       ) : null}
 
       <section>
-        <GroupsList groups={groups} />
+        <GroupsList groups={groupsQuery.data?.groups ?? initialData.groups} />
       </section>
 
       <Modal
@@ -133,7 +145,10 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
         title="Nuovo gruppo"
         description="Crea un gruppo e poi aprilo per aggiungere membri, spese e rimborsi."
       >
-        <CreateGroupForm isSubmitting={isCreatingGroup} onSubmit={handleCreateGroup} />
+        <CreateGroupForm
+          isSubmitting={createGroupMutation.isPending}
+          onSubmit={handleCreateGroup}
+        />
       </Modal>
     </div>
   );

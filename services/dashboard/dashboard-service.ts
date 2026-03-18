@@ -1,5 +1,6 @@
 import { calculateSavingGoalMetrics } from "@/lib/saving-goals/calculations";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { materializeRecurringIncomes } from "@/services/recurring-incomes/recurring-income-service";
 import type { Database } from "@/types/database";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
@@ -214,6 +215,8 @@ function formatActivityTime(value: string, now: Date) {
 }
 
 export async function getDashboardData(currentDate = new Date()): Promise<DashboardData> {
+  await materializeRecurringIncomes(currentDate);
+
   const supabase = await createSupabaseServerClient();
   const { start, end, today } = getMonthBounds(currentDate);
   const monthStart = toIsoDate(start);

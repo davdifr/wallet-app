@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, RefreshCcw } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 
+import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { RecurringIncomeForm } from "@/components/recurring-incomes/recurring-income-form";
 import { RecurringIncomesList } from "@/components/recurring-incomes/recurring-incomes-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { fetchJson } from "@/lib/query/fetch-json";
+import { queryKeys } from "@/lib/query/query-keys";
+import { publishSyncEvent } from "@/lib/query/sync-events";
 import type {
-  MaterializeRecurringIncomesResult,
   RecurringIncome,
   RecurringIncomeFormState,
   RecurringIncomeFormValues
@@ -33,68 +37,103 @@ function sortRecurringIncomes(items: RecurringIncome[]) {
   });
 }
 
-async function readResponse<T>(response: Response): Promise<T> {
-  const data = (await response.json()) as T & { message?: string };
-
-  if (!response.ok) {
-    throw new Error(data.message ?? "Richiesta non riuscita.");
-  }
-
-  return data;
-}
-
 export function RecurringIncomesWorkspace({
   initialRecurringIncomes
 }: RecurringIncomesWorkspaceProps) {
-  const [recurringIncomes, setRecurringIncomes] = useState(
-    sortRecurringIncomes(initialRecurringIncomes)
-  );
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [isMaterializing, setIsMaterializing] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [recurringIncomeToDelete, setRecurringIncomeToDelete] = useState<RecurringIncome | null>(
     null
   );
   const [pageMessage, setPageMessage] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const syncSourceId = useSyncSourceId();
+  const initialData = useMemo(
+    () => ({ recurringIncomes: sortRecurringIncomes(initialRecurringIncomes) }),
+    [initialRecurringIncomes]
+  );
 
-  async function reloadRecurringIncomes() {
-    const response = await fetch("/api/recurring-incomes", {
-      method: "GET",
-      credentials: "same-origin",
-      headers: { Accept: "application/json" },
-      cache: "no-store"
+  const recurringIncomesQuery = useQuery({
+    queryKey: queryKeys.recurringIncomes.all,
+    queryFn: () =>
+      fetchJson<{ recurringIncomes: RecurringIncome[] }>("/api/recurring-incomes", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store"
+      }),
+    initialData
+  });
+
+  const createRecurringIncomeMutation = useMutation({
+    mutationFn: async (values: RecurringIncomeFormValues) =>
+      fetchJson<{ recurringIncome: RecurringIncome }>("/api/recurring-incomes", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values)
+      })
+  });
+
+  const toggleRecurringIncomeMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) =>
+      fetchJson<{ recurringIncome: RecurringIncome }>(`/api/recurring-incomes/${id}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive })
+      })
+  });
+
+  const deleteRecurringIncomeMutation = useMutation({
+    mutationFn: async (id: string) =>
+      fetchJson<{ recurringIncome: RecurringIncome }>(`/api/recurring-incomes/${id}`, {
+        method: "DELETE",
+        credentials: "same-origin"
+      })
+  });
+
+  const recurringIncomes = sortRecurringIncomes(
+    recurringIncomesQuery.data?.recurringIncomes ?? initialData.recurringIncomes
+  );
+
+  async function syncRecurringDomain() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.recurringIncomes.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
+    ]);
+
+    publishSyncEvent({
+      id: crypto.randomUUID(),
+      domain: "recurring-incomes",
+      sourceId: syncSourceId,
+      timestamp: Date.now()
     });
-
-    const data = await readResponse<{ recurringIncomes: RecurringIncome[] }>(response);
-    setRecurringIncomes(sortRecurringIncomes(data.recurringIncomes));
   }
 
   async function handleSubmit(
     values: RecurringIncomeFormValues
   ): Promise<RecurringIncomeFormState> {
-    setIsSubmitting(true);
     setPageError(null);
     setPageMessage(null);
 
     try {
-      const response = await fetch("/api/recurring-incomes", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify(values)
-      });
+      const data = await createRecurringIncomeMutation.mutateAsync(values);
 
-      const data = await readResponse<{ recurringIncome: RecurringIncome }>(response);
-      setRecurringIncomes((current) =>
-        sortRecurringIncomes([data.recurringIncome, ...current])
+      queryClient.setQueryData<{ recurringIncomes: RecurringIncome[] }>(
+        queryKeys.recurringIncomes.all,
+        (current) => ({
+          recurringIncomes: sortRecurringIncomes([
+            data.recurringIncome,
+            ...(current?.recurringIncomes ?? [])
+          ])
+        })
       );
+
       setIsCreateModalOpen(false);
+      await syncRecurringDomain();
 
       return {
         success: true,
@@ -108,74 +147,35 @@ export function RecurringIncomesWorkspace({
             ? error.message
             : "Impossibile creare l'entrata ricorrente."
       };
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
   async function handleToggle(id: string, isActive: boolean) {
-    const previous = recurringIncomes;
     setLoadingId(id);
     setPageError(null);
     setPageMessage(null);
-    setRecurringIncomes((current) =>
-      sortRecurringIncomes(
-        current.map((item) => (item.id === id ? { ...item, isActive } : item))
-      )
-    );
 
     try {
-      const response = await fetch(`/api/recurring-incomes/${id}`, {
-        method: "PATCH",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify({ isActive })
-      });
+      const data = await toggleRecurringIncomeMutation.mutateAsync({ id, isActive });
 
-      const data = await readResponse<{ recurringIncome: RecurringIncome }>(response);
-      setRecurringIncomes((current) =>
-        sortRecurringIncomes(
-          current.map((item) => (item.id === id ? data.recurringIncome : item))
-        )
+      queryClient.setQueryData<{ recurringIncomes: RecurringIncome[] }>(
+        queryKeys.recurringIncomes.all,
+        (current) => ({
+          recurringIncomes: sortRecurringIncomes(
+            (current?.recurringIncomes ?? []).map((item) =>
+              item.id === id ? data.recurringIncome : item
+            )
+          )
+        })
       );
+
+      await syncRecurringDomain();
     } catch (error) {
-      setRecurringIncomes(previous);
       setPageError(
         error instanceof Error ? error.message : "Impossibile aggiornare la ricorrenza."
       );
     } finally {
       setLoadingId(null);
-    }
-  }
-
-  async function handleMaterialize() {
-    setIsMaterializing(true);
-    setPageError(null);
-    setPageMessage(null);
-
-    try {
-      const response = await fetch("/api/recurring-incomes/materialize", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { Accept: "application/json" }
-      });
-
-      const data = await readResponse<{ result: MaterializeRecurringIncomesResult }>(response);
-      await reloadRecurringIncomes();
-      setPageMessage(
-        `${data.result.createdTransactions} occorrenze create, ${data.result.skippedDuplicates} duplicati ignorati.`
-      );
-    } catch (error) {
-      setPageError(
-        error instanceof Error
-          ? error.message
-          : "Impossibile sincronizzare le ricorrenze."
-      );
-    } finally {
-      setIsMaterializing(false);
     }
   }
 
@@ -190,16 +190,20 @@ export function RecurringIncomesWorkspace({
     setPageMessage(null);
 
     try {
-      const response = await fetch(`/api/recurring-incomes/${target.id}`, {
-        method: "DELETE",
-        credentials: "same-origin",
-        headers: { Accept: "application/json" }
-      });
+      await deleteRecurringIncomeMutation.mutateAsync(target.id);
 
-      await readResponse<{ recurringIncome: RecurringIncome }>(response);
-      setRecurringIncomes((current) => current.filter((item) => item.id !== target.id));
+      queryClient.setQueryData<{ recurringIncomes: RecurringIncome[] }>(
+        queryKeys.recurringIncomes.all,
+        (current) => ({
+          recurringIncomes: (current?.recurringIncomes ?? []).filter(
+            (item) => item.id !== target.id
+          )
+        })
+      );
+
       setPageMessage("Entrata ricorrente eliminata. Le transazioni gia generate restano invariate.");
       setRecurringIncomeToDelete(null);
+      await syncRecurringDomain();
     } catch (error) {
       setPageError(
         error instanceof Error
@@ -230,15 +234,6 @@ export function RecurringIncomesWorkspace({
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full sm:w-auto"
-            onClick={() => void handleMaterialize()}
-          >
-            <RefreshCcw className="h-4 w-4" />
-            {isMaterializing ? "Sincronizzo..." : "Sincronizza ora"}
-          </Button>
           <Button type="button" className="w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="h-4 w-4" />
             Nuova entrata
@@ -249,6 +244,12 @@ export function RecurringIncomesWorkspace({
       {pageError ? (
         <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
           {pageError}
+        </div>
+      ) : null}
+
+      {recurringIncomesQuery.error instanceof Error ? (
+        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          {recurringIncomesQuery.error.message}
         </div>
       ) : null}
 
@@ -280,7 +281,10 @@ export function RecurringIncomesWorkspace({
         title="Nuova entrata ricorrente"
         description="Configura una ricorrenza settimanale, mensile o annuale sincronizzata con le transazioni."
       >
-        <RecurringIncomeForm isSubmitting={isSubmitting} onSubmit={handleSubmit} />
+        <RecurringIncomeForm
+          isSubmitting={createRecurringIncomeMutation.isPending}
+          onSubmit={handleSubmit}
+        />
       </Modal>
 
       <Modal

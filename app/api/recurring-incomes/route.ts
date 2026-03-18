@@ -4,7 +4,8 @@ import { recurringIncomeSchema } from "@/lib/validations/recurring-income";
 import { getUser } from "@/services/auth/get-user";
 import {
   createRecurringIncome,
-  listRecurringIncomes
+  listRecurringIncomes,
+  materializeRecurringIncomes
 } from "@/services/recurring-incomes/recurring-income-service";
 
 export async function GET() {
@@ -15,6 +16,7 @@ export async function GET() {
   }
 
   try {
+    await materializeRecurringIncomes();
     const recurringIncomes = await listRecurringIncomes();
     return NextResponse.json({ recurringIncomes });
   } catch (error) {

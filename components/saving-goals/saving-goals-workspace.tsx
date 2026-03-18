@@ -1,14 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Sparkles } from "lucide-react";
 
+import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { SavingGoalForm } from "@/components/saving-goals/saving-goal-form";
 import { SavingGoalsGrid } from "@/components/saving-goals/saving-goals-grid";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
+import { fetchJson } from "@/lib/query/fetch-json";
+import { queryKeys } from "@/lib/query/query-keys";
+import { publishSyncEvent } from "@/lib/query/sync-events";
 import type {
   GoalContributionFormState,
   SavingGoal,
@@ -20,47 +25,107 @@ type SavingGoalsWorkspaceProps = {
   initialGoals: SavingGoal[];
 };
 
-async function readResponse<T>(response: Response): Promise<T> {
-  const data = (await response.json()) as T & { message?: string };
+function sortGoals(items: SavingGoal[]) {
+  return [...items].sort((left, right) => {
+    const priorityRank = { high: 3, medium: 2, low: 1 } as const;
+    const priorityDiff = priorityRank[right.priority] - priorityRank[left.priority];
 
-  if (!response.ok) {
-    throw new Error(data.message ?? "Richiesta non riuscita.");
-  }
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
 
-  return data;
+    const leftDate = left.targetDate ?? "9999-12-31";
+    const rightDate = right.targetDate ?? "9999-12-31";
+
+    if (leftDate !== rightDate) {
+      return leftDate.localeCompare(rightDate);
+    }
+
+    return right.createdAt.localeCompare(left.createdAt);
+  });
 }
 
 export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps) {
-  const [goals, setGoals] = useState(initialGoals);
-  const [isSubmittingGoal, setIsSubmittingGoal] = useState(false);
   const [submittingContributionGoalId, setSubmittingContributionGoalId] = useState<string | null>(null);
   const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
   const [pageMessage, setPageMessage] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<SavingGoal | null>(null);
+  const queryClient = useQueryClient();
+  const syncSourceId = useSyncSourceId();
+  const initialData = useMemo(() => ({ goals: sortGoals(initialGoals) }), [initialGoals]);
+
+  const savingGoalsQuery = useQuery({
+    queryKey: queryKeys.savingGoals.all,
+    queryFn: () =>
+      fetchJson<{ goals: SavingGoal[] }>("/api/saving-goals", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store"
+      }),
+    initialData
+  });
+
+  const createGoalMutation = useMutation({
+    mutationFn: async (values: SavingGoalFormValues) =>
+      fetchJson<{ goal: SavingGoal }>("/api/saving-goals", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values)
+      })
+  });
+
+  const addContributionMutation = useMutation({
+    mutationFn: async ({ goalId, values }: { goalId: string; values: { amount: string; note: string } }) =>
+      fetchJson<{ goal: SavingGoal }>(`/api/saving-goals/${goalId}/contributions`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values)
+      })
+  });
+
+  const deleteGoalMutation = useMutation({
+    mutationFn: async (goalId: string) =>
+      fetchJson<{ goal: SavingGoal }>(`/api/saving-goals/${goalId}`, {
+        method: "DELETE",
+        credentials: "same-origin"
+      })
+  });
+
+  const goals = sortGoals(savingGoalsQuery.data?.goals ?? initialData.goals);
+
+  async function syncSavingGoalsDomain() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.savingGoals.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
+    ]);
+
+    publishSyncEvent({
+      id: crypto.randomUUID(),
+      domain: "saving-goals",
+      sourceId: syncSourceId,
+      timestamp: Date.now()
+    });
+  }
 
   async function handleCreateGoal(
     values: SavingGoalFormValues
   ): Promise<SavingGoalFormState> {
-    setIsSubmittingGoal(true);
     setPageError(null);
     setPageMessage(null);
 
     try {
-      const response = await fetch("/api/saving-goals", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify(values)
-      });
+      const data = await createGoalMutation.mutateAsync(values);
 
-      const data = await readResponse<{ goal: SavingGoal }>(response);
-      setGoals((current) => [data.goal, ...current]);
+      queryClient.setQueryData<{ goals: SavingGoal[] }>(queryKeys.savingGoals.all, (current) => ({
+        goals: sortGoals([data.goal, ...(current?.goals ?? [])])
+      }));
+
       setIsCreateModalOpen(false);
+      await syncSavingGoalsDomain();
 
       return {
         success: true,
@@ -71,8 +136,6 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
         success: false,
         message: error instanceof Error ? error.message : "Impossibile creare il goal."
       };
-    } finally {
-      setIsSubmittingGoal(false);
     }
   }
 
@@ -85,20 +148,15 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
     setPageMessage(null);
 
     try {
-      const response = await fetch(`/api/saving-goals/${goalId}/contributions`, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify(values)
-      });
+      const data = await addContributionMutation.mutateAsync({ goalId, values });
 
-      const data = await readResponse<{ goal: SavingGoal }>(response);
-      setGoals((current) =>
-        current.map((goal) => (goal.id === goalId ? data.goal : goal))
-      );
+      queryClient.setQueryData<{ goals: SavingGoal[] }>(queryKeys.savingGoals.all, (current) => ({
+        goals: sortGoals(
+          (current?.goals ?? []).map((goal) => (goal.id === goalId ? data.goal : goal))
+        )
+      }));
+
+      await syncSavingGoalsDomain();
 
       return {
         success: true,
@@ -126,16 +184,15 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
     setPageMessage(null);
 
     try {
-      const response = await fetch(`/api/saving-goals/${target.id}`, {
-        method: "DELETE",
-        credentials: "same-origin",
-        headers: { Accept: "application/json" }
-      });
+      await deleteGoalMutation.mutateAsync(target.id);
 
-      await readResponse<{ goal: SavingGoal }>(response);
-      setGoals((current) => current.filter((goal) => goal.id !== target.id));
+      queryClient.setQueryData<{ goals: SavingGoal[] }>(queryKeys.savingGoals.all, (current) => ({
+        goals: sortGoals((current?.goals ?? []).filter((goal) => goal.id !== target.id))
+      }));
+
       setGoalToDelete(null);
       setPageMessage("Goal eliminato correttamente.");
+      await syncSavingGoalsDomain();
     } catch (error) {
       setPageError(error instanceof Error ? error.message : "Impossibile eliminare il goal.");
     } finally {
@@ -172,6 +229,12 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
       {pageError ? (
         <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
           {pageError}
+        </div>
+      ) : null}
+
+      {savingGoalsQuery.error instanceof Error ? (
+        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          {savingGoalsQuery.error.message}
         </div>
       ) : null}
 
@@ -220,7 +283,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
         title="Nuovo saving goal"
         description="Definisci priorita, target e data obiettivo per il prossimo traguardo."
       >
-        <SavingGoalForm isSubmitting={isSubmittingGoal} onSubmit={handleCreateGoal} />
+        <SavingGoalForm isSubmitting={createGoalMutation.isPending} onSubmit={handleCreateGoal} />
       </Modal>
 
       <Modal
