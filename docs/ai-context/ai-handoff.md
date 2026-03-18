@@ -8,6 +8,7 @@
 - Il pattern corrente per i dati client e `server page -> workspace client -> API interne -> TanStack Query`.
 - La UI e in italiano, quindi nuove schermate o messaggi dovrebbero mantenere la stessa lingua salvo decisione esplicita.
 - La valuta e quasi ovunque hardcoded a `EUR`.
+- L'app ha una configurazione PWA iOS minima gia attiva; modifiche a header o bottom nav mobile vanno testate anche in homescreen standalone su iPhone.
 
 ## Stato reale delle funzionalita
 
@@ -53,6 +54,10 @@ Le viste principali usano TanStack Query con invalidazione per dominio e sync cr
 ### 6. Directory utenti per gruppi
 
 La ricerca e l'arricchimento dei profili gruppo non leggono piu direttamente `public.users`. Dipendono da funzioni SQL in `supabase/user-directory.sql`. Se manca l'applicazione di quel file sul database, invite e nomi profilo si rompono.
+
+### 7. Safe area mobile
+
+Header e bottom navigation mobile usano classi CSS basate su `env(safe-area-inset-*)`. Se si tocca la shell o il spacing globale, controllare sempre la resa su iPhone in modalita PWA, non solo in Safari normale.
 
 ## Debito tecnico e opportunita ad alto valore
 

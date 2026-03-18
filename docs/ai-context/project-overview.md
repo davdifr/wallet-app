@@ -38,6 +38,7 @@ L'app e pensata come base full-stack pronta a crescere, non come MVP puramente s
 - Shell autenticata con header, sidebar desktop e bottom navigation mobile.
 - Ogni sezione dashboard usa fetching server-side iniziale e poi aggiornamenti client via `fetch` verso `/api/...` orchestrati da TanStack Query.
 - La navigazione tra tab principali viene preriscaldata con prefetch di route e dati per ridurre i caricamenti percepiti.
+- L'app espone metadata PWA, manifest e icone Apple; il layout mobile gestisce anche le safe area iPhone in modalita homescreen standalone.
 - UI in italiano, con naming tecnico talvolta misto inglese/italiano.
 
 ## Flussi principali

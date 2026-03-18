@@ -41,7 +41,8 @@ Il pattern dominante e:
 
 ### Layout condivisi
 
-- `app/layout.tsx`: font globali e metadata.
+- `app/layout.tsx`: font globali, metadata PWA, viewport e integrazione Apple Web App.
+- `app/manifest.ts`, `app/icon.tsx`, `app/apple-icon.tsx`: manifest e asset PWA generati lato Next.
 - `app/(dashboard)/layout.tsx`: protezione auth e montaggio `AppShell`.
 - `components/layout/app-shell.tsx`: header, sidebar desktop e bottom nav mobile.
 
@@ -183,3 +184,4 @@ Non c'e una state library globale classica per tutti gli stati. La parte condivi
 - Valuta applicativa corrente fissata a `EUR`.
 - Ordinamenti e formattazione localizzati su `it-IT`.
 - Le query sono generalmente user-scoped grazie a RLS e relazioni con `user_id`.
+- In modalita iPhone standalone la shell mobile usa le `safe-area-inset-*` per evitare sovrapposizioni con notch, Dynamic Island e bordi arrotondati.
