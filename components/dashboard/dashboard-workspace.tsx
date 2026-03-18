@@ -97,19 +97,7 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
         <DailyBudgetCard result={data.dailyBudget} totalWealth={data.totalWealthLabel} />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
-        <MonthlyOverviewCard
-          totalWealth={data.totalWealthLabel}
-          balance={data.balanceLabel}
-          spendableToday={data.spendableTodayLabel}
-          income={data.incomeLabel}
-          expenses={data.expensesLabel}
-          savingsRate={data.savingsRateLabel}
-          monthlyReserve={data.monthlyReserveLabel}
-          protectedGoals={data.protectedGoalsLabel}
-          trend={data.trend}
-          compact
-        />
+      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <PiggyBankCard
           summary={data.piggyBankSummary}
           onSubmitMovement={async (values) => {
@@ -135,14 +123,11 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
             }
           }}
         />
+        <SavingGoalsStatusCard goals={data.goals} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <SavingGoalsStatusCard goals={data.goals} />
         <RecentActivityCard items={data.recentActivity} />
-      </section>
-
-      <section>
         <TopCategoriesCard categories={data.topCategories} />
       </section>
     </div>
