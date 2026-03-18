@@ -7,6 +7,8 @@ type GoalItem = {
   title: string;
   progress: number;
   helper: string;
+  protectedAmount: string;
+  healthLabel: string;
 };
 
 type SavingGoalsStatusCardProps = {
@@ -16,8 +18,8 @@ type SavingGoalsStatusCardProps = {
 export function SavingGoalsStatusCard({ goals }: SavingGoalsStatusCardProps) {
   return (
     <DashboardShellCard
-      title="Stato Saving Goals"
-      subtitle="Focus sugli obiettivi piu vicini"
+      title="Obiettivi Da Proteggere"
+      subtitle="Progresso reale, priorita e tempo stimato al traguardo"
       action={
         <div className="rounded-2xl bg-slate-100 p-2 text-slate-700">
           <Target className="h-4 w-4" />
@@ -27,7 +29,7 @@ export function SavingGoalsStatusCard({ goals }: SavingGoalsStatusCardProps) {
     >
       {goals.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-10 text-center text-sm text-slate-500">
-          Nessun saving goal attivo da mostrare.
+          Nessun obiettivo attivo da mostrare.
         </div>
       ) : (
         goals.map((goal) => (
@@ -36,6 +38,12 @@ export function SavingGoalsStatusCard({ goals }: SavingGoalsStatusCardProps) {
               <div>
                 <p className="font-medium text-slate-900">{goal.title}</p>
                 <p className="mt-1 text-sm text-slate-500">{goal.helper}</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
+                  {goal.healthLabel}
+                </p>
+                <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
+                  Protetti oggi: {goal.protectedAmount}
+                </p>
               </div>
               <span className="font-display text-2xl font-semibold text-slate-950">
                 {goal.progress}%

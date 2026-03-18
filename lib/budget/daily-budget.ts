@@ -1,23 +1,46 @@
+import {
+  distributeGoalProtection,
+  type GoalProtectionAllocation,
+  type GoalProtectionInput
+} from "@/lib/budget/goal-protection";
+
 export type DailyBudgetStatus = "in_linea" | "attenzione" | "fuori_budget";
 
 export type DailyBudgetInput = {
-  expectedMonthlyIncome: number;
+  registeredMonthlyIncome: number;
+  projectedRecurringIncome: number;
   registeredMonthlyExpenses: number;
-  monthlySavingsTarget: number;
+  piggyBankBalance: number;
+  averageMonthlyExpenses: number;
+  goals: GoalProtectionInput[];
   currentDate: Date;
 };
 
+export type DailyBudgetWarnings = {
+  negativeBudget: boolean;
+  underfundedGoals: boolean;
+  insufficientLiquidity: boolean;
+};
+
 export type DailyBudgetResult = {
-  remainingMonthlyBudget: number;
+  dailyBudget: number;
   recommendedDailySpend: number;
-  status: DailyBudgetStatus;
+  remainingMonthlyBudget: number;
+  spendableBalance: number;
+  monthlyAvailableLiquidity: number;
+  projectedRecurringIncome: number;
+  blockedInPiggyBank: number;
+  prudentialReserve: number;
+  remainingMonthReserve: number;
+  goalCapacity: number;
+  protectedForGoals: number;
+  goalAllocations: GoalProtectionAllocation[];
   daysInMonth: number;
   daysRemaining: number;
   daysElapsed: number;
-  spendableBudget: number;
-  idealDailySpend: number;
-  idealSpentToDate: number;
-  varianceToDate: number;
+  explanation: string;
+  warnings: DailyBudgetWarnings;
+  status: DailyBudgetStatus;
 };
 
 function roundCurrency(value: number) {
@@ -25,10 +48,10 @@ function roundCurrency(value: number) {
 }
 
 function getMonthMeta(currentDate: Date) {
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const currentDay = currentDate.getDate();
+  const year = currentDate.getUTCFullYear();
+  const month = currentDate.getUTCMonth();
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const currentDay = currentDate.getUTCDate();
   const normalizedDay = Math.min(Math.max(currentDay, 1), daysInMonth);
   const daysElapsed = normalizedDay;
   const daysRemaining = Math.max(daysInMonth - normalizedDay + 1, 1);
@@ -40,50 +63,99 @@ function getMonthMeta(currentDate: Date) {
   };
 }
 
+function buildExplanation(input: {
+  spendableBalance: number;
+  blockedInPiggyBank: number;
+  prudentialReserve: number;
+  protectedForGoals: number;
+  daysRemaining: number;
+  warnings: DailyBudgetWarnings;
+}) {
+  const parts = [
+    `Spendibile mese ${input.spendableBalance.toFixed(2)} EUR`,
+    `salvadanaio ${input.blockedInPiggyBank.toFixed(2)} EUR`,
+    `riserva ${input.prudentialReserve.toFixed(2)} EUR`,
+    `goal ${input.protectedForGoals.toFixed(2)} EUR`,
+    `${input.daysRemaining} giorni residui`
+  ];
+
+  if (input.warnings.negativeBudget) {
+    parts.push("budget negativo");
+  } else if (input.warnings.underfundedGoals) {
+    parts.push("goal sottofinanziati");
+  } else if (input.warnings.insufficientLiquidity) {
+    parts.push("liquidita insufficiente");
+  }
+
+  return parts.join(" · ");
+}
+
 export function calculateDailyBudget(input: DailyBudgetInput): DailyBudgetResult {
-  const expectedMonthlyIncome = Math.max(input.expectedMonthlyIncome, 0);
+  const registeredMonthlyIncome = Math.max(input.registeredMonthlyIncome, 0);
+  const projectedRecurringIncome = Math.max(input.projectedRecurringIncome, 0);
   const registeredMonthlyExpenses = Math.max(input.registeredMonthlyExpenses, 0);
-  const monthlySavingsTarget = Math.max(input.monthlySavingsTarget, 0);
+  const blockedInPiggyBank = Math.max(input.piggyBankBalance, 0);
+  const averageMonthlyExpenses = Math.max(input.averageMonthlyExpenses, 0);
 
   const { daysElapsed, daysInMonth, daysRemaining } = getMonthMeta(input.currentDate);
 
-  // Formula:
-  // 1. budget spendibile mese = entrate previste - target di risparmio
-  // 2. budget residuo = budget spendibile - spese gia registrate
-  // 3. spesa giornaliera consigliata = budget residuo / giorni rimanenti
-  // 4. stato = confronto tra spesa reale e ritmo ideale distribuito sul mese
-  const spendableBudget = expectedMonthlyIncome - monthlySavingsTarget;
-  const remainingMonthlyBudget = spendableBudget - registeredMonthlyExpenses;
-  const idealDailySpend =
-    daysInMonth > 0 ? Math.max(spendableBudget, 0) / daysInMonth : 0;
-  const idealSpentToDate = idealDailySpend * daysElapsed;
-  const varianceToDate = registeredMonthlyExpenses - idealSpentToDate;
-  const recommendedDailySpend =
-    remainingMonthlyBudget <= 0 ? 0 : remainingMonthlyBudget / daysRemaining;
+  const monthlyAvailableLiquidity =
+    registeredMonthlyIncome +
+    projectedRecurringIncome -
+    registeredMonthlyExpenses -
+    blockedInPiggyBank;
+  const prudentialReserve = averageMonthlyExpenses;
+  const remainingMonthReserve = Math.max(prudentialReserve - registeredMonthlyExpenses, 0);
+  const goalCapacity = Math.max(monthlyAvailableLiquidity - remainingMonthReserve, 0);
+  const goalAllocations = distributeGoalProtection(goalCapacity, input.goals);
+  const protectedForGoals = goalAllocations.reduce(
+    (sum, allocation) => sum + allocation.protectedAmount,
+    0
+  );
+  const rawSpendableBalance =
+    monthlyAvailableLiquidity - remainingMonthReserve - protectedForGoals;
+  const spendableBalance = Math.max(rawSpendableBalance, 0);
+  const dailyBudget = spendableBalance <= 0 ? 0 : spendableBalance / daysRemaining;
+
+  const warnings: DailyBudgetWarnings = {
+    negativeBudget: rawSpendableBalance < 0 || monthlyAvailableLiquidity < 0,
+    underfundedGoals: goalAllocations.some((allocation) => allocation.unmetAmount > 0.009),
+    insufficientLiquidity: spendableBalance <= 0
+  };
 
   let status: DailyBudgetStatus = "in_linea";
 
-  if (remainingMonthlyBudget < 0 || spendableBudget < 0) {
+  if (warnings.negativeBudget) {
     status = "fuori_budget";
-  } else if (spendableBudget === 0 && registeredMonthlyExpenses > 0) {
-    status = "fuori_budget";
-  } else if (
-    varianceToDate > Math.max(idealDailySpend * 3, spendableBudget * 0.1) ||
-    (recommendedDailySpend > 0 && idealDailySpend > 0 && recommendedDailySpend < idealDailySpend * 0.75)
-  ) {
+  } else if (warnings.underfundedGoals || warnings.insufficientLiquidity) {
     status = "attenzione";
   }
 
   return {
-    remainingMonthlyBudget: roundCurrency(remainingMonthlyBudget),
-    recommendedDailySpend: roundCurrency(recommendedDailySpend),
-    status,
+    dailyBudget: roundCurrency(dailyBudget),
+    recommendedDailySpend: roundCurrency(dailyBudget),
+    remainingMonthlyBudget: roundCurrency(spendableBalance),
+    spendableBalance: roundCurrency(spendableBalance),
+    monthlyAvailableLiquidity: roundCurrency(monthlyAvailableLiquidity),
+    projectedRecurringIncome: roundCurrency(projectedRecurringIncome),
+    blockedInPiggyBank: roundCurrency(blockedInPiggyBank),
+    prudentialReserve: roundCurrency(prudentialReserve),
+    remainingMonthReserve: roundCurrency(remainingMonthReserve),
+    goalCapacity: roundCurrency(goalCapacity),
+    protectedForGoals: roundCurrency(protectedForGoals),
+    goalAllocations,
     daysInMonth,
     daysRemaining,
     daysElapsed,
-    spendableBudget: roundCurrency(spendableBudget),
-    idealDailySpend: roundCurrency(idealDailySpend),
-    idealSpentToDate: roundCurrency(idealSpentToDate),
-    varianceToDate: roundCurrency(varianceToDate)
+    explanation: buildExplanation({
+      spendableBalance: roundCurrency(spendableBalance),
+      blockedInPiggyBank: roundCurrency(blockedInPiggyBank),
+      prudentialReserve: roundCurrency(remainingMonthReserve),
+      protectedForGoals: roundCurrency(protectedForGoals),
+      daysRemaining,
+      warnings
+    }),
+    warnings,
+    status
   };
 }

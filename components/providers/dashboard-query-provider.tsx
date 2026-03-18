@@ -14,33 +14,14 @@ import {
   useState
 } from "react";
 
-import { queryKeys } from "@/lib/query/query-keys";
+import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import {
   createSyncSourceId,
-  type SyncDomain,
   subscribeToSyncEvents
 } from "@/lib/query/sync-events";
 
-function invalidateDomain(queryClient: QueryClient, domain: SyncDomain) {
-  switch (domain) {
-    case "transactions":
-      void queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
-      return;
-    case "recurring-incomes":
-      void queryClient.invalidateQueries({ queryKey: queryKeys.recurringIncomes.all });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
-      return;
-    case "saving-goals":
-      void queryClient.invalidateQueries({ queryKey: queryKeys.savingGoals.all });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
-      return;
-    case "groups":
-      void queryClient.invalidateQueries({ queryKey: queryKeys.groups.all });
-      return;
-  }
-}
+const DEFAULT_QUERY_STALE_TIME = 2 * 60_000;
+const DEFAULT_QUERY_GC_TIME = 15 * 60_000;
 
 function QuerySyncBridge({ sourceId }: { sourceId: string }) {
   const pathname = usePathname();
@@ -53,7 +34,7 @@ function QuerySyncBridge({ sourceId }: { sourceId: string }) {
         return;
       }
 
-      invalidateDomain(queryClient, event.domain);
+      void invalidateDomainQueries(queryClient, event.domain);
 
       if (pathname === "/dashboard") {
         router.refresh();
@@ -82,10 +63,11 @@ export function DashboardQueryProvider({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 30_000,
-            gcTime: 5 * 60_000,
+            staleTime: DEFAULT_QUERY_STALE_TIME,
+            gcTime: DEFAULT_QUERY_GC_TIME,
+            refetchOnMount: false,
             refetchOnReconnect: true,
-            refetchOnWindowFocus: true
+            refetchOnWindowFocus: false
           }
         }
       })

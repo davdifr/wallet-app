@@ -13,10 +13,16 @@ export function DashboardRoutePrefetch() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    const priorityRoutes = ["/transactions", "/saving-goals", "/recurring-incomes"] as const;
+
+    const prefetchRoute = (href: string) => {
+      router.prefetch(href);
+      void prefetchDashboardRouteData(queryClient, href);
+    };
+
     const prefetchRoutes = () => {
       for (const item of navItems) {
-        router.prefetch(item.href);
-        void prefetchDashboardRouteData(queryClient, item.href);
+        prefetchRoute(item.href);
       }
     };
 
@@ -29,12 +35,19 @@ export function DashboardRoutePrefetch() {
       cancelIdleCallback?: typeof window.cancelIdleCallback;
     };
 
+    const rafId = window.requestAnimationFrame(() => {
+      priorityRoutes.forEach((href) => {
+        prefetchRoute(href);
+      });
+    });
+
     if (typeof browserWindow.requestIdleCallback === "function") {
       const idleId = browserWindow.requestIdleCallback(() => {
         prefetchRoutes();
       });
 
       return () => {
+        window.cancelAnimationFrame(rafId);
         browserWindow.cancelIdleCallback?.(idleId);
       };
     }
@@ -44,6 +57,7 @@ export function DashboardRoutePrefetch() {
     }, 250);
 
     return () => {
+      window.cancelAnimationFrame(rafId);
       window.clearTimeout(timeoutId);
     };
   }, [queryClient, router]);

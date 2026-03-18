@@ -1,19 +1,24 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
-import { CreateGroupForm } from "@/components/groups/create-group-form";
 import { GroupsList } from "@/components/groups/groups-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { fetchJson } from "@/lib/query/fetch-json";
+import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import { queryKeys } from "@/lib/query/query-keys";
 import { publishSyncEvent } from "@/lib/query/sync-events";
 import type { CreateGroupFormValues, GroupDetails, GroupFormState } from "@/types/group-expenses";
+
+const CreateGroupForm = dynamic(
+  () => import("@/components/groups/create-group-form").then((mod) => mod.CreateGroupForm)
+);
 
 type GroupsApiResponse = {
   currentUserId: string | null;
@@ -57,7 +62,7 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
   });
 
   async function syncGroupsDomain() {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.groups.all });
+    await invalidateDomainQueries(queryClient, "groups");
     publishSyncEvent({
       id: crypto.randomUUID(),
       domain: "groups",

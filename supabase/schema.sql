@@ -10,6 +10,11 @@ create type public.recurrence_frequency as enum (
   'yearly'
 );
 create type public.goal_status as enum ('active', 'completed', 'cancelled', 'paused');
+create type public.piggy_bank_movement_type as enum (
+  'manual_add',
+  'manual_release',
+  'auto_monthly_allocation'
+);
 create type public.group_role as enum ('owner', 'admin', 'member');
 create type public.split_method as enum ('equal', 'custom', 'percentage', 'shares');
 create type public.shared_expense_status as enum ('draft', 'posted', 'settled', 'cancelled');
@@ -162,6 +167,33 @@ create table public.monthly_budget_settings (
     unique (user_id, budget_month)
 );
 
+create table public.piggy_bank_settings (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users (id) on delete cascade,
+  auto_monthly_amount numeric(14, 2) not null default 0 check (auto_monthly_amount >= 0),
+  is_auto_enabled boolean not null default false,
+  starts_on_month date not null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  constraint piggy_bank_settings_month_start_check
+    check (starts_on_month = date_trunc('month', starts_on_month)::date),
+  constraint piggy_bank_settings_user_unique
+    unique (user_id)
+);
+
+create table public.piggy_bank_movements (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users (id) on delete cascade,
+  movement_type public.piggy_bank_movement_type not null,
+  amount numeric(14, 2) not null check (amount > 0),
+  movement_date date not null default current_date,
+  note text,
+  auto_instance_key text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  constraint piggy_bank_movements_user_auto_unique unique (user_id, auto_instance_key)
+);
+
 create table public.saving_goals (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users (id) on delete cascade,
@@ -273,6 +305,9 @@ create index idx_recurring_incomes_user_active_next
 create index idx_monthly_budget_settings_user_month
   on public.monthly_budget_settings (user_id, budget_month desc);
 
+create index idx_piggy_bank_movements_user_date
+  on public.piggy_bank_movements (user_id, movement_date desc);
+
 create index idx_saving_goals_user_status
   on public.saving_goals (user_id, status, target_date);
 
@@ -339,6 +374,14 @@ create trigger set_monthly_budget_settings_updated_at
 before update on public.monthly_budget_settings
 for each row execute function public.set_updated_at();
 
+create trigger set_piggy_bank_settings_updated_at
+before update on public.piggy_bank_settings
+for each row execute function public.set_updated_at();
+
+create trigger set_piggy_bank_movements_updated_at
+before update on public.piggy_bank_movements
+for each row execute function public.set_updated_at();
+
 create trigger set_saving_goals_updated_at
 before update on public.saving_goals
 for each row execute function public.set_updated_at();
@@ -375,6 +418,8 @@ alter table public.users enable row level security;
 alter table public.transactions enable row level security;
 alter table public.recurring_incomes enable row level security;
 alter table public.monthly_budget_settings enable row level security;
+alter table public.piggy_bank_settings enable row level security;
+alter table public.piggy_bank_movements enable row level security;
 alter table public.saving_goals enable row level security;
 alter table public.goal_contributions enable row level security;
 alter table public.groups enable row level security;
@@ -430,6 +475,18 @@ with check (auth.uid() = user_id);
 
 create policy "users manage own monthly budgets"
 on public.monthly_budget_settings
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "users manage own piggy bank settings"
+on public.piggy_bank_settings
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "users manage own piggy bank movements"
+on public.piggy_bank_movements
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);

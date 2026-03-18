@@ -17,7 +17,7 @@ export function RecentActivityCard({ items }: RecentActivityCardProps) {
   return (
     <DashboardShellCard
       title="Attivita Recenti"
-      subtitle="Ultimi movimenti rilevanti del wallet"
+      subtitle="Movimenti utili per capire come sta cambiando il margine"
       contentClassName="space-y-3"
     >
       {items.length === 0 ? (

@@ -1,4 +1,7 @@
+import { calculateSavingGoalMetrics } from "@/lib/saving-goals/calculations";
+import { sortSavingGoals } from "@/lib/saving-goals/sorting";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getBudgetSnapshot } from "@/services/budget/budget-service";
 import type { Database } from "@/types/database";
 import type {
   GoalContribution,
@@ -24,9 +27,7 @@ class SavingGoalsServiceError extends Error {
   }
 }
 
-function mapContribution(
-  row: Database["public"]["Tables"]["goal_contributions"]["Row"]
-): GoalContribution {
+function mapContribution(row: GoalContributionRow): GoalContribution {
   return {
     id: row.id,
     amount: row.amount,
@@ -36,32 +37,66 @@ function mapContribution(
 }
 
 function mapGoal(
-  row: Database["public"]["Tables"]["saving_goals"]["Row"],
-  contributions: GoalContribution[]
+  row: SavingGoalRow,
+  contributions: GoalContribution[],
+  monthlyAllocableAmount: number
 ): SavingGoal {
   return {
     id: row.id,
     title: row.title,
+    description: row.description ?? "",
     targetAmount: row.target_amount,
     targetDate: row.target_date,
     savedSoFar: row.saved_so_far,
     priority: row.priority,
     createdAt: row.created_at,
-    contributions
+    contributions,
+    protectionPreviewAmount: monthlyAllocableAmount,
+    monthlyAllocableAmount
   };
 }
 
-async function getSavingGoalById(goalId: string) {
+function buildGoalsWithAllocations(
+  goalRows: SavingGoalRow[],
+  contributionRows: GoalContributionRow[],
+  goalProtectionById: Record<string, number>,
+  currentDate: Date
+) {
+  const contributionsByGoal = contributionRows.reduce<Record<string, GoalContribution[]>>(
+    (acc, item) => {
+      acc[item.goal_id] ??= [];
+      acc[item.goal_id].push(mapContribution(item));
+      return acc;
+    },
+    {}
+  );
+
+  const goals = goalRows.map((goal) =>
+    mapGoal(
+      goal,
+      contributionsByGoal[goal.id] ?? [],
+      goalProtectionById[goal.id] ?? 0
+    )
+  );
+
+  return sortSavingGoals(goals, currentDate);
+}
+
+async function getSavingGoalById(goalId: string, currentDate = new Date()) {
   const supabase = await createSupabaseServerClient();
-  const [{ data: goal, error: goalError }, { data: contributions, error: contributionsError }] =
-    await Promise.all([
-      supabase.from("saving_goals").select("*").eq("id", goalId).single(),
-      supabase
-        .from("goal_contributions")
-        .select("*")
-        .eq("goal_id", goalId)
-        .order("contribution_date", { ascending: false })
-    ]);
+  const [
+    { data: goal, error: goalError },
+    { data: contributions, error: contributionsError },
+    budgetSnapshot
+  ] = await Promise.all([
+    supabase.from("saving_goals").select("*").eq("id", goalId).single(),
+    supabase
+      .from("goal_contributions")
+      .select("*")
+      .eq("goal_id", goalId)
+      .order("contribution_date", { ascending: false }),
+    getBudgetSnapshot(currentDate)
+  ]);
 
   if (goalError) {
     throw new Error(goalError.message);
@@ -73,7 +108,8 @@ async function getSavingGoalById(goalId: string) {
 
   return mapGoal(
     goal as SavingGoalRow,
-    ((contributions ?? []) as GoalContributionRow[]).map(mapContribution)
+    ((contributions ?? []) as GoalContributionRow[]).map(mapContribution),
+    budgetSnapshot.goalProtectionById[goalId] ?? 0
   );
 }
 
@@ -97,21 +133,21 @@ async function getOwnedSavingGoal(userId: string, goalId: string) {
   return data as SavingGoalRow;
 }
 
-export async function listSavingGoals() {
+export async function listSavingGoals(currentDate = new Date()) {
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: goals, error: goalsError }, { data: contributions, error: contributionsError }] =
-    await Promise.all([
-      supabase
-        .from("saving_goals")
-        .select("*")
-        .order("priority", { ascending: false })
-        .order("target_date", { ascending: true }),
-      supabase
-        .from("goal_contributions")
-        .select("*")
-        .order("contribution_date", { ascending: false })
-    ]);
+  const [
+    { data: goals, error: goalsError },
+    { data: contributions, error: contributionsError },
+    budgetSnapshot
+  ] = await Promise.all([
+    supabase.from("saving_goals").select("*").order("priority", { ascending: false }),
+    supabase
+      .from("goal_contributions")
+      .select("*")
+      .order("contribution_date", { ascending: false }),
+    getBudgetSnapshot(currentDate)
+  ]);
 
   if (goalsError) {
     throw new Error(goalsError.message);
@@ -124,29 +160,23 @@ export async function listSavingGoals() {
   const goalRows: SavingGoalRow[] = goals ?? [];
   const contributionRows: GoalContributionRow[] = contributions ?? [];
 
-  const contributionsByGoal = contributionRows.reduce<Record<string, GoalContribution[]>>(
-    (acc, item) => {
-      acc[item.goal_id] ??= [];
-      acc[item.goal_id].push(mapContribution(item));
-      return acc;
-    },
-    {}
+  return buildGoalsWithAllocations(
+    goalRows,
+    contributionRows,
+    budgetSnapshot.goalProtectionById,
+    currentDate
   );
-
-  return goalRows.map((goal) => mapGoal(goal, contributionsByGoal[goal.id] ?? []));
 }
 
-export async function createSavingGoal(
-  userId: string,
-  values: SavingGoalFormValues
-) {
+export async function createSavingGoal(userId: string, values: SavingGoalFormValues) {
   const supabase = await createSupabaseServerClient();
 
   const payload: SavingGoalInsert = {
     user_id: userId,
     title: values.title,
+    description: values.description || null,
     target_amount: Number(values.targetAmount),
-    target_date: values.targetDate,
+    target_date: values.targetDate || null,
     saved_so_far: 0,
     priority: values.priority,
     currency: "EUR",
@@ -163,7 +193,7 @@ export async function createSavingGoal(
     throw new Error(error.message);
   }
 
-  return mapGoal(data as SavingGoalRow, []);
+  return mapGoal(data as SavingGoalRow, [], 0);
 }
 
 export async function addGoalContribution(
@@ -206,7 +236,8 @@ export async function addGoalContribution(
     throw new Error(updateError.message);
   }
 
-  return getSavingGoalById(values.goalId);
+  const result = await getSavingGoalById(values.goalId);
+  return result;
 }
 
 export async function deleteSavingGoal(userId: string, goalId: string) {
@@ -222,5 +253,5 @@ export async function deleteSavingGoal(userId: string, goalId: string) {
     throw new Error(error.message);
   }
 
-  return mapGoal(goal, []);
+  return mapGoal(goal, [], 0);
 }

@@ -41,6 +41,11 @@ export function SidebarNav() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  function prefetchNavTarget(href: string) {
+    router.prefetch(href);
+    void prefetchDashboardRouteData(queryClient, href);
+  }
+
   return (
     <nav className="space-y-2 rounded-3xl border border-white/70 bg-white/85 p-4 shadow-soft backdrop-blur">
       <p className="px-2 text-xs font-medium uppercase tracking-[0.24em] text-slate-500">
@@ -55,14 +60,9 @@ export function SidebarNav() {
             key={item.href}
             href={item.href}
             prefetch
-            onMouseEnter={() => {
-              router.prefetch(item.href);
-              void prefetchDashboardRouteData(queryClient, item.href);
-            }}
-            onTouchStart={() => {
-              router.prefetch(item.href);
-              void prefetchDashboardRouteData(queryClient, item.href);
-            }}
+            onMouseEnter={() => prefetchNavTarget(item.href)}
+            onFocus={() => prefetchNavTarget(item.href)}
+            onTouchStart={() => prefetchNavTarget(item.href)}
             className={cn(
               "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition",
               active

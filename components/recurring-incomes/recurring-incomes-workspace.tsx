@@ -1,16 +1,17 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
-import { RecurringIncomeForm } from "@/components/recurring-incomes/recurring-income-form";
 import { RecurringIncomesList } from "@/components/recurring-incomes/recurring-incomes-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { fetchJson } from "@/lib/query/fetch-json";
+import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import { queryKeys } from "@/lib/query/query-keys";
 import { publishSyncEvent } from "@/lib/query/sync-events";
 import type {
@@ -18,6 +19,13 @@ import type {
   RecurringIncomeFormState,
   RecurringIncomeFormValues
 } from "@/types/recurring-incomes";
+
+const RecurringIncomeForm = dynamic(
+  () =>
+    import("@/components/recurring-incomes/recurring-income-form").then(
+      (mod) => mod.RecurringIncomeForm
+    )
+);
 
 type RecurringIncomesWorkspaceProps = {
   initialRecurringIncomes: RecurringIncome[];
@@ -99,11 +107,7 @@ export function RecurringIncomesWorkspace({
   );
 
   async function syncRecurringDomain() {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.recurringIncomes.all }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
-    ]);
+    await invalidateDomainQueries(queryClient, "recurring-incomes");
 
     publishSyncEvent({
       id: crypto.randomUUID(),

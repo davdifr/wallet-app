@@ -1,57 +1,14 @@
 import { calculateSavingGoalMetrics } from "@/lib/saving-goals/calculations";
+import { sortSavingGoals } from "@/lib/saving-goals/sorting";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { materializeRecurringIncomes } from "@/services/recurring-incomes/recurring-income-service";
+import { getBudgetSnapshot } from "@/services/budget/budget-service";
+import type { DashboardApiData, DashboardData } from "@/types/dashboard";
 import type { Database } from "@/types/database";
+import type { SavingGoal } from "@/types/saving-goals";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
-type RecurringIncomeRow = Database["public"]["Tables"]["recurring_incomes"]["Row"];
-type MonthlyBudgetSettingsRow =
-  Database["public"]["Tables"]["monthly_budget_settings"]["Row"];
 type SavingGoalRow = Database["public"]["Tables"]["saving_goals"]["Row"];
-
-type DashboardTopCategory = {
-  name: string;
-  amount: string;
-  value: number;
-  colorClassName: string;
-};
-
-type DashboardGoal = {
-  title: string;
-  progress: number;
-  helper: string;
-};
-
-type DashboardActivity = {
-  label: string;
-  time: string;
-  amount: string;
-  type: "income" | "expense";
-};
-
-export type DashboardData = {
-  balanceLabel: string;
-  incomeLabel: string;
-  expensesLabel: string;
-  savingsRateLabel: string;
-  savingsTargetLabel: string;
-  trend: number[];
-  dailyBudgetInput: {
-    expectedMonthlyIncome: number;
-    registeredMonthlyExpenses: number;
-    monthlySavingsTarget: number;
-    currentDate: Date;
-  };
-  topCategories: DashboardTopCategory[];
-  goals: DashboardGoal[];
-  recentActivity: DashboardActivity[];
-};
-
-export type DashboardApiData = Omit<DashboardData, "dailyBudgetInput"> & {
-  dailyBudgetInput: Omit<DashboardData["dailyBudgetInput"], "currentDate"> & {
-    currentDate: string;
-  };
-};
+type GoalContributionRow = Database["public"]["Tables"]["goal_contributions"]["Row"];
 
 const topCategoryColors = [
   "bg-slate-950",
@@ -91,78 +48,16 @@ function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-function getSavingsRate(monthlyIncome: number, monthlyExpenses: number) {
-  if (monthlyIncome <= 0) {
-    return monthlyExpenses > 0 ? -100 : 0;
+function getSavingsRate(totalWealth: number, piggyBankBalance: number) {
+  if (totalWealth <= 0) {
+    return piggyBankBalance > 0 ? 100 : 0;
   }
 
-  return roundCurrency(((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100);
+  return roundCurrency((piggyBankBalance / totalWealth) * 100);
 }
 
 function parseDate(date: string) {
   return new Date(`${date}T00:00:00.000Z`);
-}
-
-function addMonths(date: Date, months: number) {
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth();
-  const day = date.getUTCDate();
-  const lastDayOfTargetMonth = new Date(Date.UTC(year, month + months + 1, 0)).getUTCDate();
-
-  return new Date(Date.UTC(year, month + months, Math.min(day, lastDayOfTargetMonth)));
-}
-
-function getNextOccurrenceDate(
-  currentDate: string,
-  frequency: "weekly" | "monthly" | "yearly"
-) {
-  const base = parseDate(currentDate);
-
-  switch (frequency) {
-    case "weekly":
-      return toIsoDate(new Date(base.getTime() + 7 * 24 * 60 * 60 * 1000));
-    case "monthly":
-      return toIsoDate(addMonths(base, 1));
-    case "yearly":
-      return toIsoDate(addMonths(base, 12));
-  }
-}
-
-function getProjectedRecurringIncomeForMonth(
-  recurringIncomes: RecurringIncomeRow[],
-  monthEnd: string
-) {
-  let total = 0;
-
-  for (const recurringIncome of recurringIncomes) {
-    if (!recurringIncome.is_active) {
-      continue;
-    }
-
-    const frequency =
-      recurringIncome.frequency === "weekly" ||
-      recurringIncome.frequency === "monthly" ||
-      recurringIncome.frequency === "yearly"
-        ? recurringIncome.frequency
-        : null;
-
-    if (!frequency) {
-      continue;
-    }
-
-    let occurrenceDate = recurringIncome.next_occurrence_on;
-
-    while (occurrenceDate <= monthEnd) {
-      if (recurringIncome.ends_on && occurrenceDate > recurringIncome.ends_on) {
-        break;
-      }
-
-      total += recurringIncome.amount;
-      occurrenceDate = getNextOccurrenceDate(occurrenceDate, frequency);
-    }
-  }
-
-  return roundCurrency(total);
 }
 
 function buildTrend(transactions: TransactionRow[], currentDate: Date) {
@@ -221,19 +116,18 @@ function formatActivityTime(value: string, now: Date) {
 }
 
 export async function getDashboardData(currentDate = new Date()): Promise<DashboardData> {
-  await materializeRecurringIncomes(currentDate);
-
   const supabase = await createSupabaseServerClient();
   const { start, end, today } = getMonthBounds(currentDate);
   const monthStart = toIsoDate(start);
   const monthEnd = toIsoDate(end);
 
   const [
+    budgetSnapshot,
     { data: transactions, error: transactionsError },
-    { data: recurringIncomes, error: recurringError },
-    { data: budgetSetting, error: budgetError },
-    { data: savingGoals, error: goalsError }
+    { data: savingGoals, error: goalsError },
+    { data: contributions, error: contributionsError }
   ] = await Promise.all([
+    getBudgetSnapshot(currentDate),
     supabase
       .from("transactions")
       .select("*")
@@ -243,44 +137,45 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
       .order("transaction_date", { ascending: false })
       .order("created_at", { ascending: false }),
     supabase
-      .from("recurring_incomes")
-      .select("*")
-      .eq("is_active", true)
-      .in("frequency", ["weekly", "monthly", "yearly"])
-      .lte("next_occurrence_on", monthEnd),
-    supabase
-      .from("monthly_budget_settings")
-      .select("*")
-      .eq("budget_month", monthStart)
-      .maybeSingle(),
-    supabase
       .from("saving_goals")
       .select("*")
       .in("status", ["active", "completed"])
-      .order("target_date", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: false })
+      .order("priority", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("goal_contributions")
+      .select("*")
+      .order("contribution_date", { ascending: false })
   ]);
 
   if (transactionsError) {
     throw new Error(transactionsError.message);
   }
 
-  if (recurringError) {
-    throw new Error(recurringError.message);
-  }
-
-  if (budgetError) {
-    throw new Error(budgetError.message);
-  }
-
   if (goalsError) {
     throw new Error(goalsError.message);
   }
 
+  if (contributionsError) {
+    throw new Error(contributionsError.message);
+  }
+
   const transactionRows = (transactions ?? []) as TransactionRow[];
-  const recurringIncomeRows = (recurringIncomes ?? []) as RecurringIncomeRow[];
-  const monthlyBudget = budgetSetting as MonthlyBudgetSettingsRow | null;
   const savingGoalRows = (savingGoals ?? []) as SavingGoalRow[];
+  const contributionRows = (contributions ?? []) as GoalContributionRow[];
+
+  const contributionsByGoal = contributionRows.reduce<
+    Record<string, Array<{ id: string; amount: number; contributionDate: string; note: string }>>
+  >((acc, item) => {
+    acc[item.goal_id] ??= [];
+    acc[item.goal_id].push({
+      id: item.id,
+      amount: item.amount,
+      contributionDate: item.contribution_date,
+      note: item.note ?? ""
+    });
+    return acc;
+  }, {});
 
   const monthlyIncome = roundCurrency(
     transactionRows
@@ -292,13 +187,6 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
       .filter((transaction) => transaction.transaction_type === "expense")
       .reduce((sum, transaction) => sum + transaction.amount, 0)
   );
-  const savingsTarget = monthlyBudget?.target_savings ?? 0;
-  const projectedRecurringIncome = getProjectedRecurringIncomeForMonth(
-    recurringIncomeRows,
-    monthEnd
-  );
-  const expectedMonthlyIncome = roundCurrency(monthlyIncome + projectedRecurringIncome);
-  const projectedMonthBalance = roundCurrency(expectedMonthlyIncome - monthlyExpenses);
 
   const topCategories = Array.from(
     transactionRows
@@ -319,31 +207,52 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
       colorClassName: topCategoryColors[index % topCategoryColors.length]
     }));
 
-  const goals = savingGoalRows
-    .filter((goal) => goal.status !== "cancelled" && goal.status !== "paused")
-    .slice(0, 3)
-    .map((goal) => {
-      const metrics = calculateSavingGoalMetrics(
-        {
-          createdAt: goal.created_at,
-          savedSoFar: goal.saved_so_far,
-          targetAmount: goal.target_amount,
-          targetDate: goal.target_date
-        },
-        currentDate
-      );
+  const sortedGoals: SavingGoal[] = sortSavingGoals(
+    savingGoalRows.map((goal) => ({
+      id: goal.id,
+      title: goal.title,
+      description: goal.description ?? "",
+      targetAmount: goal.target_amount,
+      targetDate: goal.target_date,
+      savedSoFar: goal.saved_so_far,
+      priority: goal.priority,
+      createdAt: goal.created_at,
+      contributions: contributionsByGoal[goal.id] ?? [],
+      protectionPreviewAmount: budgetSnapshot.goalProtectionById[goal.id] ?? 0,
+      monthlyAllocableAmount: budgetSnapshot.goalProtectionById[goal.id] ?? 0
+    })),
+    currentDate
+  );
 
-      const helper =
-        metrics.remainingAmount <= 0
-          ? "Goal completato"
-          : `${formatCurrency(metrics.remainingAmount)} mancanti · ${metrics.reachabilityLabel.toLowerCase()}`;
+  const goals = sortedGoals.slice(0, 3).map((goal) => {
+    const protectedAmount = budgetSnapshot.goalProtectionById[goal.id] ?? 0;
+    const metrics = calculateSavingGoalMetrics(
+      {
+        contributions: goal.contributions,
+        monthlyAllocableAmount: protectedAmount,
+        savedSoFar: goal.savedSoFar,
+        targetAmount: goal.targetAmount,
+        targetDate: goal.targetDate
+      },
+      currentDate
+    );
+    const helper =
+      metrics.remainingAmount <= 0
+        ? "Goal completato"
+        : `${formatCurrency(metrics.remainingAmount)} mancanti · ${
+            metrics.estimatedReachDate
+              ? `stima ${metrics.estimatedReachDate}`
+              : metrics.reachabilityLabel.toLowerCase()
+          }`;
 
-      return {
-        title: goal.title,
-        progress: Math.round(metrics.progressPercentage),
-        helper
-      };
-    });
+    return {
+      title: goal.title,
+      progress: Math.round(metrics.progressPercentage),
+      helper,
+      protectedAmount: formatCurrency(protectedAmount),
+      healthLabel: metrics.reachabilityLabel
+    };
+  });
 
   const recentActivity = transactionRows.slice(0, 6).map((transaction) => ({
     label: transaction.merchant ?? transaction.category ?? "Transazione",
@@ -358,18 +267,21 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
   }));
 
   return {
-    balanceLabel: formatCurrency(projectedMonthBalance),
-    incomeLabel: formatCurrency(expectedMonthlyIncome),
+    totalWealthLabel: formatCurrency(budgetSnapshot.totalWealth),
+    balanceLabel: formatCurrency(budgetSnapshot.dailyBudget.monthlyAvailableLiquidity),
+    spendableTodayLabel: formatCurrency(budgetSnapshot.dailyBudget.dailyBudget),
+    incomeLabel: formatCurrency(
+      budgetSnapshot.registeredMonthlyIncome + budgetSnapshot.projectedRecurringIncome
+    ),
     expensesLabel: formatCurrency(monthlyExpenses),
-    savingsRateLabel: `${Math.round(getSavingsRate(expectedMonthlyIncome, monthlyExpenses))}%`,
-    savingsTargetLabel: formatCurrency(savingsTarget),
+    savingsRateLabel: `${Math.round(
+      getSavingsRate(budgetSnapshot.totalWealth, budgetSnapshot.piggyBankBalance)
+    )}%`,
+    monthlyReserveLabel: formatCurrency(budgetSnapshot.dailyBudget.remainingMonthReserve),
+    protectedGoalsLabel: formatCurrency(budgetSnapshot.dailyBudget.protectedForGoals),
     trend: buildTrend(transactionRows, today),
-    dailyBudgetInput: {
-      expectedMonthlyIncome,
-      registeredMonthlyExpenses: monthlyExpenses,
-      monthlySavingsTarget: savingsTarget,
-      currentDate
-    },
+    dailyBudget: budgetSnapshot.dailyBudget,
+    piggyBankSummary: budgetSnapshot.piggyBankSummary,
     topCategories,
     goals,
     recentActivity
@@ -377,11 +289,5 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
 }
 
 export function serializeDashboardData(data: DashboardData): DashboardApiData {
-  return {
-    ...data,
-    dailyBudgetInput: {
-      ...data.dailyBudgetInput,
-      currentDate: data.dailyBudgetInput.currentDate.toISOString()
-    }
-  };
+  return data;
 }

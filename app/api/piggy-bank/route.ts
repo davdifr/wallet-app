@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getUser } from "@/services/auth/get-user";
-import {
-  getDashboardData,
-  serializeDashboardData
-} from "@/services/dashboard/dashboard-service";
+import { getPiggyBankSummary } from "@/services/piggy-bank/piggy-bank-service";
 
 export async function GET() {
   const user = await getUser();
@@ -14,15 +11,15 @@ export async function GET() {
   }
 
   try {
-    const data = await getDashboardData();
-    return NextResponse.json(serializeDashboardData(data));
+    const piggyBank = await getPiggyBankSummary();
+    return NextResponse.json({ piggyBank });
   } catch (error) {
     return NextResponse.json(
       {
         message:
           error instanceof Error
             ? error.message
-            : "Impossibile caricare la dashboard."
+            : "Impossibile caricare il salvadanaio."
       },
       { status: 500 }
     );

@@ -15,8 +15,8 @@ export function TopCategoriesCard({ categories }: TopCategoriesCardProps) {
   if (categories.length === 0) {
     return (
       <DashboardShellCard
-        title="Top Categorie Spesa"
-        subtitle="Dove stai spendendo di piu questo mese"
+        title="Dove Stai Spendendo"
+        subtitle="Le categorie che consumano piu velocemente il margine mensile"
         contentClassName="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-10 text-center text-sm text-slate-500"
       >
         Nessuna spesa registrata nel mese corrente.
@@ -28,8 +28,8 @@ export function TopCategoriesCard({ categories }: TopCategoriesCardProps) {
 
   return (
     <DashboardShellCard
-      title="Top Categorie Spesa"
-      subtitle="Dove stai spendendo di piu questo mese"
+      title="Dove Stai Spendendo"
+      subtitle="Le categorie che consumano piu velocemente il margine mensile"
       contentClassName="space-y-4"
     >
       {categories.map((category) => (

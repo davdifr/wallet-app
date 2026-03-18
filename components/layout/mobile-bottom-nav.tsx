@@ -14,6 +14,11 @@ export function MobileBottomNav() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  function prefetchNavTarget(href: string) {
+    router.prefetch(href);
+    void prefetchDashboardRouteData(queryClient, href);
+  }
+
   return (
     <nav className="safe-bottom-nav fixed z-30 rounded-[1.35rem] border border-white/80 bg-white/95 p-1 shadow-soft backdrop-blur lg:hidden">
       <ul className="grid grid-cols-5 gap-1">
@@ -26,14 +31,9 @@ export function MobileBottomNav() {
               <Link
                 href={item.href}
                 prefetch
-                onMouseEnter={() => {
-                  router.prefetch(item.href);
-                  void prefetchDashboardRouteData(queryClient, item.href);
-                }}
-                onTouchStart={() => {
-                  router.prefetch(item.href);
-                  void prefetchDashboardRouteData(queryClient, item.href);
-                }}
+                onMouseEnter={() => prefetchNavTarget(item.href)}
+                onFocus={() => prefetchNavTarget(item.href)}
+                onTouchStart={() => prefetchNavTarget(item.href)}
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-1 rounded-[1rem] px-1 py-2 text-center text-[10px] font-medium leading-none transition",
                   active

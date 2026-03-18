@@ -1,19 +1,21 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Sparkles } from "lucide-react";
 
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
-import { SavingGoalForm } from "@/components/saving-goals/saving-goal-form";
 import { SavingGoalsGrid } from "@/components/saving-goals/saving-goals-grid";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
 import { fetchJson } from "@/lib/query/fetch-json";
+import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import { queryKeys } from "@/lib/query/query-keys";
 import { publishSyncEvent } from "@/lib/query/sync-events";
+import { sortSavingGoals } from "@/lib/saving-goals/sorting";
 import type {
   GoalContributionFormState,
   SavingGoal,
@@ -21,28 +23,16 @@ import type {
   SavingGoalFormValues
 } from "@/types/saving-goals";
 
+const SavingGoalForm = dynamic(
+  () => import("@/components/saving-goals/saving-goal-form").then((mod) => mod.SavingGoalForm)
+);
+
 type SavingGoalsWorkspaceProps = {
   initialGoals: SavingGoal[];
 };
 
 function sortGoals(items: SavingGoal[]) {
-  return [...items].sort((left, right) => {
-    const priorityRank = { high: 3, medium: 2, low: 1 } as const;
-    const priorityDiff = priorityRank[right.priority] - priorityRank[left.priority];
-
-    if (priorityDiff !== 0) {
-      return priorityDiff;
-    }
-
-    const leftDate = left.targetDate ?? "9999-12-31";
-    const rightDate = right.targetDate ?? "9999-12-31";
-
-    if (leftDate !== rightDate) {
-      return leftDate.localeCompare(rightDate);
-    }
-
-    return right.createdAt.localeCompare(left.createdAt);
-  });
+  return sortSavingGoals(items);
 }
 
 export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps) {
@@ -98,10 +88,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
   const goals = sortGoals(savingGoalsQuery.data?.goals ?? initialData.goals);
 
   async function syncSavingGoalsDomain() {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.savingGoals.all }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
-    ]);
+    await invalidateDomainQueries(queryClient, "saving-goals");
 
     publishSyncEvent({
       id: crypto.randomUUID(),
@@ -129,7 +116,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
 
       return {
         success: true,
-        message: "Saving goal creato con successo."
+        message: "Obiettivo creato con successo."
       };
     } catch (error) {
       return {
@@ -213,8 +200,8 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
                 Obiettivi di risparmio
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
-                Crea goal con target e scadenza, monitora il progresso e aggiungi
-                contributi manuali con aggiornamento immediato.
+                Crea obiettivi con target e priorita, monitora il progresso e registra
+                contributi manuali. La previsione usa la media degli ultimi 3 mesi.
               </p>
             </div>
           </div>
@@ -256,7 +243,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
                   Goal dettagliati
                 </CardTitle>
                 <p className="text-sm text-slate-500">
-                  Ogni card mostra progresso, quota mensile e raggiungibilita.
+                  Ogni card mostra progresso, ritmo storico, protezione teorica e stima.
                 </p>
               </div>
             </div>
@@ -281,7 +268,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
         title="Nuovo saving goal"
-        description="Definisci priorita, target e data obiettivo per il prossimo traguardo."
+        description="Definisci target, priorita e una nota facoltativa. La data desiderata resta opzionale."
       >
         <SavingGoalForm isSubmitting={createGoalMutation.isPending} onSubmit={handleCreateGoal} />
       </Modal>

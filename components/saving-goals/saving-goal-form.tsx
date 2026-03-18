@@ -12,6 +12,7 @@ import type { SavingGoalFormState, SavingGoalFormValues } from "@/types/saving-g
 
 const emptyValues: SavingGoalFormValues = {
   title: "",
+  description: "",
   targetAmount: "",
   targetDate: "",
   priority: "medium"
@@ -76,9 +77,23 @@ export function SavingGoalForm({
         <FieldError errors={state.errors?.title} />
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="description">Descrizione</Label>
+        <Input
+          id="description"
+          name="description"
+          placeholder="Facoltativa"
+          value={values.description}
+          onChange={(event) =>
+            setValues((current) => ({ ...current, description: event.target.value }))
+          }
+        />
+        <FieldError errors={state.errors?.description} />
+      </div>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="targetAmount">Target amount</Label>
+          <Label htmlFor="targetAmount">Target</Label>
           <Input
             id="targetAmount"
             name="targetAmount"
@@ -95,7 +110,7 @@ export function SavingGoalForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="priority">Priority</Label>
+          <Label htmlFor="priority">Priorita</Label>
           <Select
             id="priority"
             name="priority"
@@ -110,16 +125,16 @@ export function SavingGoalForm({
               }))
             }
           >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option value="low">Bassa</option>
+            <option value="medium">Media</option>
+            <option value="high">Alta</option>
           </Select>
           <FieldError errors={state.errors?.priority} />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="targetDate">Target date</Label>
+        <Label htmlFor="targetDate">Data desiderata</Label>
         <Input
           id="targetDate"
           name="targetDate"
@@ -130,6 +145,9 @@ export function SavingGoalForm({
           }
         />
         <FieldError errors={state.errors?.targetDate} />
+        <p className="text-xs text-slate-500">
+          Facoltativa. Se la lasci vuota, il sistema stima il tempo al traguardo.
+        </p>
       </div>
 
       <div
@@ -146,7 +164,7 @@ export function SavingGoalForm({
       </div>
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Creazione in corso..." : "Crea saving goal"}
+        {isSubmitting ? "Creazione in corso..." : "Crea obiettivo"}
       </Button>
     </form>
   );

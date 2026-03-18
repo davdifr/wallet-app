@@ -1,6 +1,11 @@
 "use client";
 
-export type SyncDomain = "transactions" | "recurring-incomes" | "saving-goals" | "groups";
+export type SyncDomain =
+  | "transactions"
+  | "recurring-incomes"
+  | "saving-goals"
+  | "piggy-bank"
+  | "groups";
 
 export type SyncEvent = {
   id: string;

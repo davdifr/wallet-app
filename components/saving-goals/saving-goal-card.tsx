@@ -31,6 +31,13 @@ const priorityLabel = {
   high: "Priorita alta"
 } as const;
 
+const healthStyle = {
+  in_linea: "bg-emerald-100 text-emerald-700",
+  lento: "bg-amber-100 text-amber-700",
+  bloccato: "bg-rose-100 text-rose-700",
+  completato: "bg-sky-100 text-sky-700"
+} as const;
+
 export function SavingGoalCard({
   goal,
   isSubmittingContribution = false,
@@ -48,13 +55,7 @@ export function SavingGoalCard({
             <Badge variant="secondary" className="bg-white text-slate-700">
               {priorityLabel[goal.priority]}
             </Badge>
-            <Badge
-              className={
-                metrics.isReachable
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-amber-100 text-amber-700"
-              }
-            >
+            <Badge className={healthStyle[metrics.healthStatus]}>
               {metrics.reachabilityLabel}
             </Badge>
           </div>
@@ -64,8 +65,11 @@ export function SavingGoalCard({
             </h3>
             <p className="mt-1 text-sm text-slate-500">
               Target {formatCurrency(goal.targetAmount)}
-              {goal.targetDate ? ` · entro ${goal.targetDate}` : ""}
+              {goal.targetDate ? ` · data desiderata ${goal.targetDate}` : ""}
             </p>
+            {goal.description ? (
+              <p className="mt-2 max-w-2xl text-sm text-slate-500">{goal.description}</p>
+            ) : null}
           </div>
         </div>
 
@@ -121,12 +125,10 @@ export function SavingGoalCard({
             <span className="text-xs uppercase tracking-[0.18em]">Al Mese</span>
           </div>
           <p className="mt-3 text-xl font-semibold text-slate-950">
-            {formatCurrency(metrics.monthlyContributionNeeded)}
+            {formatCurrency(metrics.monthlyAllocableAmount)}
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            {metrics.monthsRemaining > 0
-              ? `${metrics.monthsRemaining} mesi stimati`
-              : "Scadenza superata"}
+            Quota teorica allocabile in base alla priorita
           </p>
         </div>
 
@@ -138,7 +140,50 @@ export function SavingGoalCard({
           <p className="mt-3 text-xl font-semibold text-slate-950">
             {formatCurrency(metrics.averageMonthlySaved)}
           </p>
-          <p className="mt-1 text-xs text-slate-500">Basato sullo storico del goal</p>
+          <p className="mt-1 text-xs text-slate-500">Media degli ultimi 3 mesi</p>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-4">
+          <div className="flex items-center gap-2 text-slate-500">
+            <Flag className="h-4 w-4" />
+            <span className="text-xs uppercase tracking-[0.18em]">Stima Target</span>
+          </div>
+          <p className="mt-3 text-xl font-semibold text-slate-950">
+            {metrics.estimatedMonthsToReach === null
+              ? "Da stimare"
+              : `${metrics.estimatedMonthsToReach} mesi`}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {metrics.estimatedReachDate
+              ? `Possibile da ${metrics.estimatedReachDate}`
+              : "Servono piu contributi per stimare"}
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-4">
+          <div className="flex items-center gap-2 text-slate-500">
+            <PiggyBank className="h-4 w-4" />
+            <span className="text-xs uppercase tracking-[0.18em]">Protezione</span>
+          </div>
+          <p className="mt-3 text-xl font-semibold text-slate-950">
+            {formatCurrency(metrics.totalManualContributionAmount)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">Totale contributi manuali storici</p>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-4">
+          <div className="flex items-center gap-2 text-slate-500">
+            <CalendarClock className="h-4 w-4" />
+            <span className="text-xs uppercase tracking-[0.18em]">Stato Goal</span>
+          </div>
+          <p className="mt-3 text-xl font-semibold capitalize text-slate-950">
+            {metrics.healthStatus.replace("_", " ")}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {goal.targetDate
+              ? `Ritmo necessario ${formatCurrency(metrics.monthlyContributionNeeded)}/mese`
+              : "Basato solo sul ritmo sostenibile"}
+          </p>
         </div>
       </div>
 

@@ -1,34 +1,35 @@
 "use client";
 
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { DailyBudgetCard } from "@/components/dashboard/daily-budget-card";
 import { MonthlyOverviewCard } from "@/components/dashboard/monthly-overview-card";
+import { PiggyBankCard } from "@/components/dashboard/piggy-bank-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { SavingGoalsStatusCard } from "@/components/dashboard/saving-goals-status-card";
 import { TopCategoriesCard } from "@/components/dashboard/top-categories-card";
+import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { NoticeCard } from "@/components/ui/notice-card";
 import { fetchJson } from "@/lib/query/fetch-json";
+import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import { queryKeys } from "@/lib/query/query-keys";
-import type { DashboardApiData } from "@/services/dashboard/dashboard-service";
+import { publishSyncEvent } from "@/lib/query/sync-events";
+import type { DashboardApiData } from "@/types/dashboard";
+import type {
+  PiggyBankMovementFormValues,
+  PiggyBankSettingsFormValues,
+  PiggyBankSummary
+} from "@/types/piggy-bank";
 
 type DashboardWorkspaceProps = {
   initialData: DashboardApiData;
 };
 
-function normalizeDashboardData(data: DashboardApiData) {
-  return {
-    ...data,
-    dailyBudgetInput: {
-      ...data.dailyBudgetInput,
-      currentDate: new Date(data.dailyBudgetInput.currentDate)
-    }
-  };
-}
-
 export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
   const stableInitialData = useMemo(() => initialData, [initialData]);
+  const queryClient = useQueryClient();
+  const syncSourceId = useSyncSourceId();
   const dashboardQuery = useQuery({
     queryKey: queryKeys.dashboard,
     queryFn: () =>
@@ -40,6 +41,24 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
     initialData: stableInitialData,
     placeholderData: (previousData) => previousData
   });
+  const updatePiggyBankSettingsMutation = useMutation({
+    mutationFn: async (values: PiggyBankSettingsFormValues) =>
+      fetchJson<{ piggyBank: PiggyBankSummary }>("/api/piggy-bank/settings", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values)
+      })
+  });
+  const createPiggyBankMovementMutation = useMutation({
+    mutationFn: async (values: PiggyBankMovementFormValues) =>
+      fetchJson<{ piggyBank: PiggyBankSummary }>("/api/piggy-bank/movements", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values)
+      })
+  });
 
   if (dashboardQuery.error instanceof Error) {
     return (
@@ -47,26 +66,84 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
     );
   }
 
-  const data = normalizeDashboardData(dashboardQuery.data ?? stableInitialData);
+  const data = dashboardQuery.data ?? stableInitialData;
+
+  async function syncBudgetDomains() {
+    await invalidateDomainQueries(queryClient, "piggy-bank");
+
+    publishSyncEvent({
+      id: crypto.randomUUID(),
+      domain: "piggy-bank",
+      sourceId: syncSourceId,
+      timestamp: Date.now()
+    });
+  }
 
   return (
     <div className="space-y-5 pb-12 sm:space-y-6">
       <MonthlyOverviewCard
+        totalWealth={data.totalWealthLabel}
         balance={data.balanceLabel}
+        spendableToday={data.spendableTodayLabel}
         income={data.incomeLabel}
         expenses={data.expensesLabel}
         savingsRate={data.savingsRateLabel}
+        monthlyReserve={data.monthlyReserveLabel}
+        protectedGoals={data.protectedGoalsLabel}
         trend={data.trend}
       />
 
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <DailyBudgetCard input={data.dailyBudgetInput} />
-        <TopCategoriesCard categories={data.topCategories} />
+      <section>
+        <DailyBudgetCard result={data.dailyBudget} totalWealth={data.totalWealthLabel} />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+        <MonthlyOverviewCard
+          totalWealth={data.totalWealthLabel}
+          balance={data.balanceLabel}
+          spendableToday={data.spendableTodayLabel}
+          income={data.incomeLabel}
+          expenses={data.expensesLabel}
+          savingsRate={data.savingsRateLabel}
+          monthlyReserve={data.monthlyReserveLabel}
+          protectedGoals={data.protectedGoalsLabel}
+          trend={data.trend}
+          compact
+        />
+        <PiggyBankCard
+          summary={data.piggyBankSummary}
+          onSubmitMovement={async (values) => {
+            try {
+              await createPiggyBankMovementMutation.mutateAsync(values);
+              await syncBudgetDomains();
+              return "Movimento salvato.";
+            } catch (error) {
+              return error instanceof Error
+                ? error.message
+                : "Impossibile salvare il movimento.";
+            }
+          }}
+          onSubmitSettings={async (values) => {
+            try {
+              await updatePiggyBankSettingsMutation.mutateAsync(values);
+              await syncBudgetDomains();
+              return "Piano aggiornato.";
+            } catch (error) {
+              return error instanceof Error
+                ? error.message
+                : "Impossibile aggiornare il piano.";
+            }
+          }}
+        />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <SavingGoalsStatusCard goals={data.goals} />
         <RecentActivityCard items={data.recentActivity} />
+      </section>
+
+      <section>
+        <TopCategoriesCard categories={data.topCategories} />
       </section>
     </div>
   );

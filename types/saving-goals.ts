@@ -12,16 +12,20 @@ export type GoalContribution = {
 export type SavingGoal = {
   id: string;
   title: string;
+  description: string;
   targetAmount: number;
   targetDate: string | null;
   savedSoFar: number;
   priority: GoalPriority;
   createdAt: string;
   contributions: GoalContribution[];
+  protectionPreviewAmount: number;
+  monthlyAllocableAmount: number;
 };
 
 export type SavingGoalFormValues = {
   title: string;
+  description: string;
   targetAmount: string;
   targetDate: string;
   priority: GoalPriority;
@@ -45,12 +49,17 @@ export type GoalContributionFormState = {
   errors?: Partial<Record<keyof GoalContributionFormValues | "general", string[]>>;
 };
 
+export type SavingGoalHealthStatus = "in_linea" | "lento" | "bloccato" | "completato";
+
 export type SavingGoalMetrics = {
   progressPercentage: number;
   remainingAmount: number;
-  monthsRemaining: number;
+  totalManualContributionAmount: number;
+  monthlyAllocableAmount: number;
   monthlyContributionNeeded: number;
   averageMonthlySaved: number;
-  isReachable: boolean;
+  estimatedMonthsToReach: number | null;
+  estimatedReachDate: string | null;
   reachabilityLabel: string;
+  healthStatus: SavingGoalHealthStatus;
 };

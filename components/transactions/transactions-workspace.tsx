@@ -1,15 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
-import { TransactionForm } from "@/components/transactions/transaction-form";
 import { TransactionsList } from "@/components/transactions/transactions-list";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { fetchJson } from "@/lib/query/fetch-json";
+import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import { queryKeys } from "@/lib/query/query-keys";
 import { publishSyncEvent } from "@/lib/query/sync-events";
 import type {
@@ -18,6 +19,10 @@ import type {
   TransactionFormState,
   TransactionFormValues
 } from "@/types/transactions";
+
+const TransactionForm = dynamic(
+  () => import("@/components/transactions/transaction-form").then((mod) => mod.TransactionForm)
+);
 
 type TransactionsWorkspaceProps = {
   availableMonths: string[];
@@ -126,10 +131,7 @@ export function TransactionsWorkspace({
   }
 
   async function syncTransactionDomain() {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
-    ]);
+    await invalidateDomainQueries(queryClient, "transactions");
 
     publishSyncEvent({
       id: crypto.randomUUID(),

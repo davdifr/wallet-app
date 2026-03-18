@@ -160,6 +160,70 @@ export type Database = {
           user_id?: string;
         };
       };
+      piggy_bank_settings: {
+        Row: {
+          auto_monthly_amount: number;
+          created_at: string;
+          id: string;
+          is_auto_enabled: boolean;
+          starts_on_month: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          auto_monthly_amount?: number;
+          created_at?: string;
+          id?: string;
+          is_auto_enabled?: boolean;
+          starts_on_month: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          auto_monthly_amount?: number;
+          created_at?: string;
+          id?: string;
+          is_auto_enabled?: boolean;
+          starts_on_month?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+      };
+      piggy_bank_movements: {
+        Row: {
+          amount: number;
+          auto_instance_key: string | null;
+          created_at: string;
+          id: string;
+          movement_date: string;
+          movement_type: "manual_add" | "manual_release" | "auto_monthly_allocation";
+          note: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          amount: number;
+          auto_instance_key?: string | null;
+          created_at?: string;
+          id?: string;
+          movement_date?: string;
+          movement_type: "manual_add" | "manual_release" | "auto_monthly_allocation";
+          note?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          amount?: number;
+          auto_instance_key?: string | null;
+          created_at?: string;
+          id?: string;
+          movement_date?: string;
+          movement_type?: "manual_add" | "manual_release" | "auto_monthly_allocation";
+          note?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+      };
       saving_goals: {
         Row: {
           created_at: string;
@@ -472,6 +536,10 @@ export type Database = {
       goal_priority: "low" | "medium" | "high";
       goal_status: "active" | "completed" | "cancelled" | "paused";
       group_role: "owner" | "admin" | "member";
+      piggy_bank_movement_type:
+        | "manual_add"
+        | "manual_release"
+        | "auto_monthly_allocation";
       settlement_status: "pending" | "completed" | "cancelled";
       shared_expense_status: "draft" | "posted" | "settled" | "cancelled";
       split_method: "equal" | "custom" | "percentage" | "shares";
