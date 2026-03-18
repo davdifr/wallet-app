@@ -1,6 +1,10 @@
 import type { SavingGoal, SavingGoalMetrics } from "@/types/saving-goals";
 
 function roundCurrency(value: number) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
   return Math.round(value * 100) / 100;
 }
 
@@ -31,7 +35,7 @@ export function calculateSavingGoalMetrics(
   const currentMonthDate = toUtcDate(currentDate);
   const createdAtDate = toUtcDate(goal.createdAt);
   const monthsObserved = Math.max(1, monthDiff(createdAtDate, currentMonthDate) + 1);
-  const averageMonthlySaved = savedSoFar / monthsObserved;
+  const averageMonthlySaved = monthsObserved > 0 ? savedSoFar / monthsObserved : 0;
 
   let monthsRemaining = 1;
 

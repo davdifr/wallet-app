@@ -44,7 +44,7 @@ export function SavingGoalCard({
     <article className="rounded-[2rem] border border-slate-200 bg-slate-50/80 p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 pr-14">
             <Badge variant="secondary" className="bg-white text-slate-700">
               {priorityLabel[goal.priority]}
             </Badge>
@@ -69,32 +69,29 @@ export function SavingGoalCard({
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-right">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Progresso</p>
-            <p className="mt-2 font-display text-3xl font-semibold text-slate-950">
-              {metrics.progressPercentage}%
-            </p>
-          </div>
-
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-              disabled={isDeleting}
-              onClick={() => onDelete(goal)}
-            >
-              <Trash2 className="h-4 w-4" />
-              {isDeleting ? "Elimino..." : "Elimina"}
-            </Button>
-          </div>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="self-start border-rose-200 px-3 text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:shrink-0"
+          disabled={isDeleting}
+          onClick={() => onDelete(goal)}
+        >
+          <Trash2 className="h-4 w-4" />
+          {isDeleting ? "Elimino..." : "Elimina"}
+        </Button>
       </div>
 
       <div className="mt-5">
-        <Progress value={metrics.progressPercentage} />
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div className="text-sm text-slate-500">
+            {formatCurrency(goal.savedSoFar)} di {formatCurrency(goal.targetAmount)}
+          </div>
+          <div className="font-display text-2xl font-semibold text-slate-950">
+            {metrics.progressPercentage}%
+          </div>
+        </div>
+        <Progress value={metrics.progressPercentage} className="h-3.5 bg-slate-200/90" />
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">

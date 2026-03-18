@@ -59,7 +59,7 @@ export function GoalContributionForm({
         }
       }}
     >
-      <div className="grid gap-3 sm:grid-cols-[0.8fr_1.2fr]">
+      <div className="grid gap-3 sm:grid-cols-[0.8fr_1.2fr] sm:items-start">
         <Input
           name="amount"
           type="number"
@@ -73,7 +73,8 @@ export function GoalContributionForm({
         />
         <Textarea
           name="note"
-          className="min-h-11"
+          rows={1}
+          className="min-h-11 resize-none py-3"
           placeholder="Nota opzionale sul contributo"
           value={values.note}
           onChange={(event) =>
