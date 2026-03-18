@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { fetchJson } from "@/lib/query/fetch-json";
+import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import { queryKeys } from "@/lib/query/query-keys";
 import { publishSyncEvent } from "@/lib/query/sync-events";
 import type {
@@ -128,6 +129,24 @@ export function GroupDetailWorkspace({
           }
         : previous
     );
+
+    queryClient.setQueryData<{ hasUnreadGroups: boolean }>(
+      queryKeys.groups.unreadSummary,
+      (previous) => {
+        const groupsCache = queryClient.getQueryData<{
+          currentUserId: string | null;
+          groups: GroupDetails[];
+        }>(queryKeys.groups.all);
+
+        if (!groupsCache) {
+          return previous;
+        }
+
+        return {
+          hasUnreadGroups: groupsCache.groups.some((item) => item.group.hasUnreadExpenses)
+        };
+      }
+    );
   }
 
   const markViewedMutation = useMutation({
@@ -140,6 +159,11 @@ export function GroupDetailWorkspace({
       setGroupUnreadFlag(false);
     },
     onSuccess: async () => {
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.groups.unreadSummary,
+        type: "active"
+      });
+
       publishSyncEvent({
         id: crypto.randomUUID(),
         domain: "groups",
@@ -154,10 +178,8 @@ export function GroupDetailWorkspace({
   });
 
   async function syncGroupsDomain() {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.groups.all }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.groups.detail(group.group.id) })
-    ]);
+    await invalidateDomainQueries(queryClient, "groups");
+    await queryClient.invalidateQueries({ queryKey: queryKeys.groups.detail(group.group.id) });
 
     publishSyncEvent({
       id: crypto.randomUUID(),
