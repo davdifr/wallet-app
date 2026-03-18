@@ -33,14 +33,16 @@ export function useGroupExpensesRealtimeSync(
           ...(groupId ? { filter: `group_id=eq.${groupId}` } : {})
         },
         () => {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.groups.all });
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.groups.unreadSummary
+          void queryClient.refetchQueries({
+            queryKey: queryKeys.groups.unreadSummary,
+            type: "active"
           });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.groups.all });
 
           if (groupId) {
-            void queryClient.invalidateQueries({
-              queryKey: queryKeys.groups.detail(groupId)
+            void queryClient.refetchQueries({
+              queryKey: queryKeys.groups.detail(groupId),
+              type: "active"
             });
           }
         }
