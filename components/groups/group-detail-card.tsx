@@ -383,6 +383,7 @@ export function GroupDetailCard({
         className="max-w-4xl"
       >
         <SharedExpenseForm
+          currentUserId={currentUserId}
           groupId={group.group.id}
           members={group.group.members}
           isSubmitting={pendingCreateExpenseGroupId === group.group.id}

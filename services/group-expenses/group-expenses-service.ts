@@ -58,6 +58,13 @@ type InvitableUserRow = {
   avatar_url?: string | null;
 };
 
+type UserDirectoryRpcClient = {
+  rpc: (
+    fn: string,
+    params?: Record<string, unknown>
+  ) => Promise<{ data: unknown; error: { code?: string; message: string } | null }>;
+};
+
 function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
 }
@@ -372,10 +379,10 @@ export async function listGroupsWithDetails(options?: {
   >();
 
   if (userIds.length > 0) {
-    const { data: users, error: usersError } = await supabase
-      .from("users")
-      .select("id, email, full_name, avatar_url")
-      .in("id", userIds);
+    const { data: users, error: usersError } = await (supabase as typeof supabase &
+      UserDirectoryRpcClient).rpc("get_user_directory_profiles", {
+      user_ids: userIds
+    });
 
     if (usersError) {
       throw new Error(usersError.message);
@@ -506,14 +513,12 @@ export async function getGroupWithDetails(groupId: string): Promise<GroupDetails
 
 export async function listUserInviteCandidates(): Promise<UserInviteCandidate[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await (supabase as typeof supabase & {
-    rpc: (
-      fn: string,
-      params?: Record<string, unknown>
-    ) => Promise<{ data: unknown; error: { message: string } | null }>;
-  }).rpc("search_invitable_users", {
+  const { data, error } = await (supabase as typeof supabase & UserDirectoryRpcClient).rpc(
+    "search_invitable_users",
+    {
     search_query: null
-  });
+    }
+  );
 
   if (error) throw new Error(error.message);
 
@@ -671,12 +676,8 @@ export async function addGroupMember(values: AddGroupMemberFormValues) {
     };
   } else {
     const normalizedEmail = normalizeEmail(values.email);
-    const { data: users, error: userError } = await (supabase as typeof supabase & {
-      rpc: (
-        fn: string,
-        params?: Record<string, unknown>
-      ) => Promise<{ data: unknown; error: { message: string } | null }>;
-    }).rpc("search_invitable_users", { search_query: normalizedEmail });
+    const { data: users, error: userError } = await (supabase as typeof supabase &
+      UserDirectoryRpcClient).rpc("search_invitable_users", { search_query: normalizedEmail });
 
     if (userError) {
       throw new Error(userError.message);

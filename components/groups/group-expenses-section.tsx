@@ -16,6 +16,7 @@ import type {
 } from "@/types/group-expenses";
 
 type GroupExpensesSectionProps = {
+  currentUserId: string | null;
   group: GroupDetails;
   pendingCreateExpenseGroupId?: string | null;
   pendingSettleSplitId?: string | null;
@@ -31,6 +32,7 @@ function formatCurrency(value: number) {
 }
 
 export function GroupExpensesSection({
+  currentUserId,
   group,
   pendingCreateExpenseGroupId = null,
   pendingSettleSplitId = null,
@@ -187,6 +189,7 @@ export function GroupExpensesSection({
         className="max-w-4xl"
       >
         <SharedExpenseForm
+          currentUserId={currentUserId}
           groupId={group.group.id}
           members={group.group.members}
           isSubmitting={pendingCreateExpenseGroupId === group.group.id}

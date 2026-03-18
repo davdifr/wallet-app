@@ -365,6 +365,7 @@ export function GroupDetailWorkspace({
 
         <div id="spese-gruppo" className="scroll-mt-24">
           <GroupExpensesSection
+            currentUserId={currentUserId}
             group={group}
             pendingCreateExpenseGroupId={pendingCreateExpenseGroupId}
             pendingSettleSplitId={pendingSettleSplitId}

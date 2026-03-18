@@ -17,6 +17,7 @@ import type {
 } from "@/types/group-expenses";
 
 type SharedExpenseFormProps = {
+  currentUserId: string | null;
   groupId: string;
   members: GroupMember[];
   isSubmitting?: boolean;
@@ -99,6 +100,7 @@ const emptyBaseValues = {
 };
 
 export function SharedExpenseForm({
+  currentUserId,
   groupId,
   members,
   isSubmitting = false,
@@ -112,11 +114,15 @@ export function SharedExpenseForm({
   const [description, setDescription] = useState("");
   const [expenseDate, setExpenseDate] = useState("");
   const [paidByMemberId, setPaidByMemberId] = useState("");
+  const defaultPaidByMemberId = useMemo(
+    () => members.find((member) => member.userId === currentUserId)?.id ?? members[0]?.id ?? "",
+    [currentUserId, members]
+  );
 
   useEffect(() => {
     setWeights(createEqualWeights(members));
-    setPaidByMemberId((current) => current || members[0]?.id || "");
-  }, [members]);
+    setPaidByMemberId((current) => current || defaultPaidByMemberId);
+  }, [defaultPaidByMemberId, members]);
 
   const weightedSplit = useMemo(
     () =>
@@ -170,7 +176,7 @@ export function SharedExpenseForm({
           setExpenseDate(emptyBaseValues.expenseDate);
           setSplitMethod(emptyBaseValues.splitMethod);
           setWeights(createEqualWeights(members));
-          setPaidByMemberId(members[0]?.id ?? "");
+          setPaidByMemberId(defaultPaidByMemberId);
         }
       }}
     >
