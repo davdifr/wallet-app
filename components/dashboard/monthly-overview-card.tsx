@@ -47,18 +47,18 @@ export function MonthlyOverviewCard({
             Personal wallet
           </div>
           <div>
-            <p className="text-sm text-slate-300">Saldo mese previsto</p>
+            <p className="text-sm text-slate-300">Saldo disponibile</p>
             <p className="mt-2 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
               {balance}
             </p>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div className="rounded-2xl border border-white/10 bg-white/8 p-3 sm:rounded-3xl sm:p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Entrate previste</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Entrate</p>
               <p className="mt-2 text-sm font-semibold sm:text-lg">{income}</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/8 p-3 sm:rounded-3xl sm:p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Spese registrate</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Spese</p>
               <p className="mt-2 text-sm font-semibold sm:text-lg">{expenses}</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/8 p-3 sm:rounded-3xl sm:p-4">
