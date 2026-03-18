@@ -47,6 +47,12 @@ export type DashboardData = {
   recentActivity: DashboardActivity[];
 };
 
+export type DashboardApiData = Omit<DashboardData, "dailyBudgetInput"> & {
+  dailyBudgetInput: Omit<DashboardData["dailyBudgetInput"], "currentDate"> & {
+    currentDate: string;
+  };
+};
+
 const topCategoryColors = [
   "bg-slate-950",
   "bg-blue-500",
@@ -367,5 +373,15 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
     topCategories,
     goals,
     recentActivity
+  };
+}
+
+export function serializeDashboardData(data: DashboardData): DashboardApiData {
+  return {
+    ...data,
+    dailyBudgetInput: {
+      ...data.dailyBudgetInput,
+      currentDate: data.dailyBudgetInput.currentDate.toISOString()
+    }
   };
 }

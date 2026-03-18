@@ -1,14 +1,18 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
+import { prefetchDashboardRouteData } from "@/lib/query/prefetch-dashboard-route-data";
 import { cn } from "@/lib/utils";
 
 import { isActivePath, navItems } from "./sidebar-nav";
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
   return (
     <nav className="fixed inset-x-2 bottom-2 z-30 rounded-[1.35rem] border border-white/80 bg-white/95 p-1 shadow-soft backdrop-blur lg:hidden">
@@ -21,6 +25,15 @@ export function MobileBottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
+                prefetch
+                onMouseEnter={() => {
+                  router.prefetch(item.href);
+                  void prefetchDashboardRouteData(queryClient, item.href);
+                }}
+                onTouchStart={() => {
+                  router.prefetch(item.href);
+                  void prefetchDashboardRouteData(queryClient, item.href);
+                }}
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-1 rounded-[1rem] px-1 py-2 text-center text-[10px] font-medium leading-none transition",
                   active

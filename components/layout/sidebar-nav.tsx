@@ -1,7 +1,8 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowRightLeft,
   LayoutGrid,
@@ -10,6 +11,7 @@ import {
   Users
 } from "lucide-react";
 
+import { prefetchDashboardRouteData } from "@/lib/query/prefetch-dashboard-route-data";
 import { cn } from "@/lib/utils";
 
 export const navItems = [
@@ -36,6 +38,8 @@ export function isActivePath(pathname: string, href: string) {
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
   return (
     <nav className="space-y-2 rounded-3xl border border-white/70 bg-white/85 p-4 shadow-soft backdrop-blur">
@@ -50,6 +54,15 @@ export function SidebarNav() {
           <Link
             key={item.href}
             href={item.href}
+            prefetch
+            onMouseEnter={() => {
+              router.prefetch(item.href);
+              void prefetchDashboardRouteData(queryClient, item.href);
+            }}
+            onTouchStart={() => {
+              router.prefetch(item.href);
+              void prefetchDashboardRouteData(queryClient, item.href);
+            }}
             className={cn(
               "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition",
               active
