@@ -4,6 +4,7 @@ import {
   distributeExpenseEqually,
   parseCustomSplitValues
 } from "@/lib/group-expenses/calculations";
+import { calculateHasUnreadSharedExpenses } from "@/lib/group-expenses/unread-expenses";
 import type { Database } from "@/types/database";
 import type {
   AddGroupMemberFormValues,
@@ -24,6 +25,9 @@ type GroupRow = Database["public"]["Tables"]["groups"]["Row"];
 type GroupInsert = Database["public"]["Tables"]["groups"]["Insert"];
 type GroupMemberRow = Database["public"]["Tables"]["group_members"]["Row"];
 type GroupMemberInsert = Database["public"]["Tables"]["group_members"]["Insert"];
+type GroupMemberViewInsert =
+  Database["public"]["Tables"]["group_member_views"]["Insert"];
+type GroupMemberViewRow = Database["public"]["Tables"]["group_member_views"]["Row"];
 type SharedExpenseRow = Database["public"]["Tables"]["shared_expenses"]["Row"];
 type SharedExpenseInsert = Database["public"]["Tables"]["shared_expenses"]["Insert"];
 type SharedExpenseSplitRow = Database["public"]["Tables"]["shared_expense_splits"]["Row"];
@@ -283,10 +287,12 @@ async function syncSettlementTransactions(input: {
 }
 
 export async function listGroupsWithDetails(options?: {
+  userId?: string | null;
   groupId?: string;
 }): Promise<GroupDetails[]> {
   const supabase = await createSupabaseServerClient();
   const groupId = options?.groupId ?? null;
+  const currentUserId = options?.userId ?? null;
 
   const groupsQuery = supabase.from("groups").select("*").order("created_at", { ascending: false });
   const membersQuery = supabase
@@ -301,6 +307,10 @@ export async function listGroupsWithDetails(options?: {
     .from("shared_expense_splits")
     .select("*")
     .order("created_at", { ascending: true });
+  const groupViewsQuery =
+    currentUserId === null
+      ? Promise.resolve({ data: [], error: null })
+      : supabase.from("group_member_views").select("*").eq("user_id", currentUserId);
   const settlementsQuery = supabase
     .from("settlements")
     .select("*")
@@ -320,12 +330,14 @@ export async function listGroupsWithDetails(options?: {
     { data: members, error: membersError },
     { data: expenses, error: expensesError },
     { data: splits, error: splitsError },
+    { data: groupViews, error: groupViewsError },
     { data: settlements, error: settlementsError }
   ] = await Promise.all([
     filteredGroupsQuery,
     filteredMembersQuery,
     filteredExpensesQuery,
     splitsQuery,
+    groupViewsQuery,
     filteredSettlementsQuery
   ]);
 
@@ -333,12 +345,14 @@ export async function listGroupsWithDetails(options?: {
   if (membersError) throw new Error(membersError.message);
   if (expensesError) throw new Error(expensesError.message);
   if (splitsError) throw new Error(splitsError.message);
+  if (groupViewsError) throw new Error(groupViewsError.message);
   if (settlementsError) throw new Error(settlementsError.message);
 
   const groupRows: GroupRow[] = groups ?? [];
   const memberRows: GroupMemberRow[] = members ?? [];
   const expenseRows: SharedExpenseRow[] = expenses ?? [];
   const splitRowsData: SharedExpenseSplitRow[] = splits ?? [];
+  const groupViewRows: GroupMemberViewRow[] = (groupViews ?? []) as GroupMemberViewRow[];
   const settlementRows: SettlementRow[] = settlements ?? [];
 
   const mappedMembers = memberRows.map((item) =>
@@ -417,6 +431,7 @@ export async function listGroupsWithDetails(options?: {
 
   return groupRows.map((group) => {
     const groupMembers = enrichedMembers.filter((member) => member.groupId === group.id);
+    const groupExpenseRows = expenseRows.filter((expense) => expense.group_id === group.id);
     const groupExpenses: SharedExpense[] = expenseRows
       .filter((expense) => expense.group_id === group.id)
       .map((expense) => {
@@ -488,11 +503,32 @@ export async function listGroupsWithDetails(options?: {
         note: settlement.note ?? ""
       }));
 
+    const currentUserMembership =
+      currentUserId === null
+        ? null
+        : groupMembers.find((member) => member.userId === currentUserId) ?? null;
+    const currentUserView =
+      currentUserId === null
+        ? null
+        : groupViewRows.find(
+            (view) => view.group_id === group.id && view.user_id === currentUserId
+          ) ?? null;
+    const hasUnreadExpenses = calculateHasUnreadSharedExpenses({
+      expenses: groupExpenseRows.map((expense) => ({
+        createdAt: expense.created_at,
+        createdByUserId: expense.created_by_user_id
+      })),
+      currentUserId,
+      lastViewedAt: currentUserView?.last_viewed_shared_expenses_at ?? null,
+      joinedAt: currentUserMembership?.joinedAt ?? null
+    });
+
     const groupData: Group = {
       id: group.id,
       name: group.name,
       description: group.description ?? "",
       currency: group.currency,
+      hasUnreadExpenses,
       createdAt: group.created_at,
       members: groupMembers
     };
@@ -506,9 +542,52 @@ export async function listGroupsWithDetails(options?: {
   });
 }
 
-export async function getGroupWithDetails(groupId: string): Promise<GroupDetails | null> {
-  const groups = await listGroupsWithDetails({ groupId });
+export async function getGroupWithDetails(
+  userId: string | null,
+  groupId: string
+): Promise<GroupDetails | null> {
+  const groups = await listGroupsWithDetails({ userId, groupId });
   return groups[0] ?? null;
+}
+
+export async function markGroupSharedExpensesViewed(userId: string, groupId: string) {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: membership, error: membershipError } = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (membershipError) {
+    throw new Error(membershipError.message);
+  }
+
+  if (!membership) {
+    throw new GroupExpensesServiceError("Non fai parte di questo gruppo.", 403);
+  }
+
+  const now = new Date().toISOString();
+  const payload: GroupMemberViewInsert = {
+    group_id: groupId,
+    user_id: userId,
+    last_viewed_shared_expenses_at: now
+  };
+
+  const { error } = await supabase.from("group_member_views").upsert(payload as never, {
+    onConflict: "group_id,user_id"
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    groupId,
+    userId,
+    lastViewedSharedExpensesAt: now
+  };
 }
 
 export async function listUserInviteCandidates(): Promise<UserInviteCandidate[]> {
@@ -812,6 +891,19 @@ export async function createSharedExpense(
     .insert(splitPayload as never);
 
   if (splitsError) throw new Error(splitsError.message);
+
+  const { error: viewStateError } = await supabase.from("group_member_views").upsert(
+    {
+      group_id: values.groupId,
+      user_id: userId,
+      last_viewed_shared_expenses_at: new Date().toISOString()
+    } as GroupMemberViewInsert as never,
+    {
+      onConflict: "group_id,user_id"
+    }
+  );
+
+  if (viewStateError) throw new Error(viewStateError.message);
 
   await syncSharedExpenseTransaction({
     id: expenseId,

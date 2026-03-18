@@ -17,6 +17,7 @@ export const queryKeys = {
   },
   groups: {
     all: ["groups"] as const,
+    detailRoot: ["groups", "detail"] as const,
     detail: (groupId: string) => ["groups", "detail", groupId] as const
   }
 };

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, Coins, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
@@ -57,6 +57,7 @@ export function GroupDetailWorkspace({
   const [pendingSettleSplitId, setPendingSettleSplitId] = useState<string | null>(null);
   const [pendingAcceptSettlementId, setPendingAcceptSettlementId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [hasAttemptedMarkViewed, setHasAttemptedMarkViewed] = useState(false);
   const initialData = useMemo<GroupApiResponse>(
     () => ({
       currentUserId: initialCurrentUserId,
@@ -80,6 +81,70 @@ export function GroupDetailWorkspace({
   const groupData = groupQuery.data ?? initialData;
   const { currentUserId, group, inviteCandidates } = groupData;
 
+  function setGroupUnreadFlag(nextHasUnreadExpenses: boolean) {
+    queryClient.setQueryData<GroupApiResponse>(
+      queryKeys.groups.detail(initialGroup.group.id),
+      (previous) =>
+        previous
+          ? {
+              ...previous,
+              group: {
+                ...previous.group,
+                group: {
+                  ...previous.group.group,
+                  hasUnreadExpenses: nextHasUnreadExpenses
+                }
+              }
+            }
+          : previous
+    );
+
+    queryClient.setQueryData<{
+      currentUserId: string | null;
+      groups: GroupDetails[];
+    }>(queryKeys.groups.all, (previous) =>
+      previous
+        ? {
+            ...previous,
+            groups: previous.groups.map((item) =>
+              item.group.id === initialGroup.group.id
+                ? {
+                    ...item,
+                    group: {
+                      ...item.group,
+                      hasUnreadExpenses: nextHasUnreadExpenses
+                    }
+                  }
+                : item
+            )
+          }
+        : previous
+    );
+  }
+
+  const markViewedMutation = useMutation({
+    mutationFn: async () =>
+      fetchJson<{ success: boolean }>(`/api/groups/${initialGroup.group.id}/viewed`, {
+        method: "POST",
+        credentials: "same-origin"
+      }),
+    onMutate: async () => {
+      setGroupUnreadFlag(false);
+    },
+    onSuccess: async () => {
+      publishSyncEvent({
+        id: crypto.randomUUID(),
+        domain: "groups",
+        sourceId: syncSourceId,
+        timestamp: Date.now()
+      });
+    },
+    onError: () => {
+      setGroupUnreadFlag(true);
+      setHasAttemptedMarkViewed(false);
+    }
+  });
+
   async function syncGroupsDomain() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.all }),
@@ -93,6 +158,27 @@ export function GroupDetailWorkspace({
       timestamp: Date.now()
     });
   }
+
+  useEffect(() => {
+    if (
+      !currentUserId ||
+      !group.group.hasUnreadExpenses ||
+      markViewedMutation.isPending ||
+      hasAttemptedMarkViewed
+    ) {
+      return;
+    }
+
+    setHasAttemptedMarkViewed(true);
+    markViewedMutation.mutate();
+  }, [
+    currentUserId,
+    group.group.hasUnreadExpenses,
+    hasAttemptedMarkViewed,
+    markViewedMutation.isPending,
+    initialGroup.group.id,
+    syncSourceId
+  ]);
 
   async function handleAddMember(values: AddGroupMemberFormValues): Promise<GroupFormState> {
     setPendingAddMemberGroupId(values.groupId);

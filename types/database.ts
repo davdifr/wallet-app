@@ -352,6 +352,32 @@ export type Database = {
           user_id?: string | null;
         };
       };
+      group_member_views: {
+        Row: {
+          created_at: string;
+          group_id: string;
+          id: string;
+          last_viewed_shared_expenses_at: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          group_id: string;
+          id?: string;
+          last_viewed_shared_expenses_at?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          group_id?: string;
+          id?: string;
+          last_viewed_shared_expenses_at?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+      };
       shared_expenses: {
         Row: {
           amount: number;

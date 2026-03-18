@@ -67,7 +67,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   try {
     const [group, inviteCandidates] = await Promise.all([
-      getGroupWithDetails(parsedId.data),
+      getGroupWithDetails(user.id, parsedId.data),
       listUserInviteCandidates()
     ]);
 

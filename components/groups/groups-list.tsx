@@ -42,9 +42,20 @@ export function GroupsList({ groups }: GroupsListProps) {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-display text-xl font-semibold text-slate-950">
-                      {item.group.name}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-display text-xl font-semibold text-slate-950">
+                        {item.group.name}
+                      </p>
+                      {item.group.hasUnreadExpenses ? (
+                        <span className="inline-flex shrink-0 items-center" title="Nuove spese">
+                          <span className="sr-only">Nuove spese non viste</span>
+                          <span
+                            aria-hidden="true"
+                            className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.14)]"
+                          />
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="mt-2 text-sm text-slate-500">
                       {item.group.description || "Nessuna descrizione disponibile."}
                     </p>

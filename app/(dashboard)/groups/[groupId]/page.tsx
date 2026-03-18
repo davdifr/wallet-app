@@ -21,7 +21,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
 
   try {
     [group, inviteCandidates] = await Promise.all([
-      getGroupWithDetails(groupId),
+      getGroupWithDetails(user?.id ?? null, groupId),
       listUserInviteCandidates()
     ]);
   } catch (error) {

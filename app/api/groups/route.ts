@@ -17,7 +17,7 @@ export async function GET() {
 
   try {
     const [groups, inviteCandidates] = await Promise.all([
-      listGroupsWithDetails(),
+      listGroupsWithDetails({ userId: user.id }),
       listUserInviteCandidates()
     ]);
 

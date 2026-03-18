@@ -49,4 +49,15 @@ describe("query invalidation map", () => {
       queryKeys.savingGoals.all
     ]);
   });
+
+  it("invalida lista e dettagli gruppi dopo una nuova spesa condivisa o mark as seen", async () => {
+    const invalidateQueries = vi.fn().mockResolvedValue(undefined);
+
+    await invalidateDomainQueries({ invalidateQueries }, "groups");
+
+    expect(getInvalidationQueryKeys("groups")).toEqual([
+      queryKeys.groups.all,
+      queryKeys.groups.detailRoot
+    ]);
+  });
 });

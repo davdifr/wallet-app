@@ -21,6 +21,7 @@ export type Group = {
   description: string;
   currency: string;
   members: GroupMember[];
+  hasUnreadExpenses: boolean;
   createdAt: string;
 };
 

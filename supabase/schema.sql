@@ -80,6 +80,16 @@ create table public.group_members (
   constraint group_members_group_user_unique unique (group_id, user_id)
 );
 
+create table public.group_member_views (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
+  last_viewed_shared_expenses_at timestamptz not null default timezone('utc', now()),
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  constraint group_member_views_group_user_unique unique (group_id, user_id)
+);
+
 create or replace function public.is_group_member(check_group_id uuid)
 returns boolean
 language sql
@@ -324,6 +334,8 @@ create index idx_group_members_group_guest on public.group_members (group_id, is
 create unique index idx_group_members_group_guest_email
   on public.group_members (group_id, guest_email)
   where guest_email is not null;
+create index idx_group_member_views_user_group
+  on public.group_member_views (user_id, group_id);
 
 create index idx_shared_expenses_group_date
   on public.shared_expenses (group_id, expense_date desc);
@@ -402,6 +414,10 @@ create trigger set_group_members_updated_at
 before update on public.group_members
 for each row execute function public.set_updated_at();
 
+create trigger set_group_member_views_updated_at
+before update on public.group_member_views
+for each row execute function public.set_updated_at();
+
 create trigger set_shared_expenses_updated_at
 before update on public.shared_expenses
 for each row execute function public.set_updated_at();
@@ -424,6 +440,7 @@ alter table public.saving_goals enable row level security;
 alter table public.goal_contributions enable row level security;
 alter table public.groups enable row level security;
 alter table public.group_members enable row level security;
+alter table public.group_member_views enable row level security;
 alter table public.shared_expenses enable row level security;
 alter table public.shared_expense_splits enable row level security;
 alter table public.settlements enable row level security;
@@ -550,6 +567,18 @@ on public.group_members
 for all
 using (public.is_group_admin(group_id))
 with check (public.is_group_admin(group_id));
+
+create policy "group members manage own view state"
+on public.group_member_views
+for all
+using (
+  auth.uid() = user_id
+  and public.is_group_member(group_id)
+)
+with check (
+  auth.uid() = user_id
+  and public.is_group_member(group_id)
+);
 
 create policy "group members can read shared expenses"
 on public.shared_expenses
