@@ -1,3 +1,8 @@
+import {
+  getIncomeCategoryDefinition,
+  getCategoryLabel,
+  resolveIncomeCategoryCompatibility
+} from "@/lib/categories/catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 import type {
@@ -12,6 +17,13 @@ type RecurringIncomeRow = Database["public"]["Tables"]["recurring_incomes"]["Row
 type RecurringIncomeUpdate =
   Database["public"]["Tables"]["recurring_incomes"]["Update"];
 type TransactionInsert = Database["public"]["Tables"]["transactions"]["Insert"];
+type PersistableRecurringIncomeValues = Omit<
+  RecurringIncomeFormValues,
+  "categorySlug" | "category"
+> & {
+  categorySlug: RecurringIncomeFormValues["categorySlug"];
+  category: string;
+};
 
 class RecurringIncomeServiceError extends Error {
   statusCode: number;
@@ -26,10 +38,24 @@ class RecurringIncomeServiceError extends Error {
 function mapRecurringIncome(
   row: Database["public"]["Tables"]["recurring_incomes"]["Row"]
 ): RecurringIncome {
+  const persistedCategory = getIncomeCategoryDefinition(row.category_slug);
+  const compatibility = persistedCategory
+    ? {
+        slug: persistedCategory.slug,
+        displayLabel: row.category?.trim() || persistedCategory.label,
+        canonicalLabel: persistedCategory.label,
+        originalLabel: row.category?.trim() || null,
+        isLegacyFallback: false,
+        wasMatched: true
+      }
+    : resolveIncomeCategoryCompatibility(row.category);
+
   return {
     id: row.id,
     amount: row.amount,
-    category: row.category ?? "Income",
+    category: compatibility.displayLabel,
+    categorySlug: compatibility.slug,
+    isLegacyCategoryFallback: compatibility.isLegacyFallback,
     description: row.description,
     source: row.source,
     frequency:
@@ -113,14 +139,15 @@ export async function listRecurringIncomes() {
 
 export async function createRecurringIncome(
   userId: string,
-  values: RecurringIncomeFormValues
+  values: PersistableRecurringIncomeValues
 ) {
   const supabase = await createSupabaseServerClient();
 
   const payload: RecurringIncomeInsert = {
     user_id: userId,
     amount: Number(values.amount),
-    category: values.category,
+    category: getCategoryLabel(values.categorySlug, "income"),
+    category_slug: values.categorySlug,
     description: values.description,
     source: values.source,
     frequency: values.frequency,
@@ -259,11 +286,14 @@ export async function materializeRecurringIncomes(
         user_id: recurringIncome.user_id,
         amount: recurringIncome.amount,
         transaction_date: occurrenceDate,
-        category: recurringIncome.category,
+        category: resolveIncomeCategoryCompatibility(recurringIncome.category).canonicalLabel,
+        category_slug:
+          getIncomeCategoryDefinition(recurringIncome.category_slug)?.slug ??
+          resolveIncomeCategoryCompatibility(recurringIncome.category).slug,
         notes: `Generata automaticamente da ricorrenza ${recurringIncome.frequency}.`,
         merchant: recurringIncome.source,
         description: buildRecurringTransactionDescription({
-          category: recurringIncome.category ?? "Income",
+          category: resolveIncomeCategoryCompatibility(recurringIncome.category).canonicalLabel,
           description: recurringIncome.description,
           source: recurringIncome.source
         }),

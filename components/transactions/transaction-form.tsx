@@ -7,6 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  getCategoriesForScope,
+  getFallbackCategory,
+  isValidCategorySlug,
+  resolveLegacyCategory
+} from "@/lib/categories/catalog";
 import { transactionSchema } from "@/lib/validations/transaction";
 import { cn } from "@/lib/utils";
 import type {
@@ -16,7 +22,6 @@ import type {
 } from "@/types/transactions";
 
 type TransactionFormProps = {
-  categories: string[];
   initialValues: Transaction | null;
   isSubmitting?: boolean;
   onCancelEdit: () => void;
@@ -27,6 +32,7 @@ const emptyValues: TransactionFormValues = {
   amount: "",
   date: "",
   category: "",
+  categorySlug: "groceries",
   note: "",
   source: "",
   type: "expense"
@@ -50,6 +56,7 @@ function mapTransactionToFormValues(transaction: Transaction | null): Transactio
     amount: transaction.amount.toString(),
     date: transaction.date,
     category: transaction.category,
+    categorySlug: transaction.categorySlug ?? resolveLegacyCategory(transaction.category, transaction.type).slug,
     note: transaction.note,
     source: transaction.source,
     type: transaction.type
@@ -57,7 +64,6 @@ function mapTransactionToFormValues(transaction: Transaction | null): Transactio
 }
 
 export function TransactionForm({
-  categories,
   initialValues,
   isSubmitting = false,
   onCancelEdit,
@@ -73,6 +79,8 @@ export function TransactionForm({
     setValues(mapTransactionToFormValues(initialValues));
     setState({ success: false });
   }, [initialValues]);
+
+  const categoryOptions = getCategoriesForScope(values.type);
 
   return (
     <form
@@ -140,36 +148,64 @@ export function TransactionForm({
             name="type"
             value={values.type}
             onChange={(event) =>
-              setValues((current) => ({
-                ...current,
-                type: event.target.value === "income" ? "income" : "expense"
-              }))
+              setValues((current) => {
+                const nextType = event.target.value === "income" ? "income" : "expense";
+                const nextCategorySlug = isValidCategorySlug(current.categorySlug, nextType)
+                  ? current.categorySlug
+                  : getFallbackCategory(nextType).slug;
+
+                return {
+                  ...current,
+                  type: nextType,
+                  categorySlug: nextCategorySlug
+                };
+              })
             }
           >
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
+            <option value="expense">Spesa</option>
+            <option value="income">Entrata</option>
           </Select>
           <FieldError errors={state.errors?.type} />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="category">Categoria</Label>
-          <Input
-            id="category"
-            name="category"
-            list="transaction-categories"
-            placeholder="Groceries, Salary, Rent..."
-            value={values.category}
-            onChange={(event) =>
-              setValues((current) => ({ ...current, category: event.target.value }))
-            }
-          />
-          <datalist id="transaction-categories">
-            {categories.map((category) => (
-              <option key={category} value={category} />
-            ))}
-          </datalist>
-          <FieldError errors={state.errors?.category} />
+        <div className="space-y-2 sm:col-span-2">
+          <Label>Categoria</Label>
+          {initialValues?.isLegacyCategoryFallback ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Categoria storica non mappata: <strong>{initialValues.category}</strong>. Se salvi
+              la transazione verra riclassificata in <strong>Altro</strong> o in una categoria
+              del catalogo che scegli qui sotto.
+            </div>
+          ) : null}
+          <input type="hidden" name="categorySlug" value={values.categorySlug ?? ""} />
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {categoryOptions.map((category) => {
+              const Icon = category.icon;
+              const isSelected = values.categorySlug === category.slug;
+
+              return (
+                <button
+                  key={category.slug}
+                  type="button"
+                  onClick={() =>
+                    setValues((current) => ({
+                      ...current,
+                      categorySlug: category.slug
+                    }))
+                  }
+                  className={
+                    isSelected
+                      ? "flex items-center gap-2 rounded-2xl border border-slate-950 bg-slate-950 px-3 py-3 text-left text-white"
+                      : "flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-slate-700"
+                  }
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="text-sm font-medium leading-tight">{category.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <FieldError errors={state.errors?.categorySlug} />
         </div>
       </div>
 

@@ -19,7 +19,7 @@ export async function saveTransactionAction(
     id: formData.get("id") || undefined,
     amount: formData.get("amount"),
     date: formData.get("date"),
-    category: formData.get("category"),
+    categorySlug: formData.get("categorySlug"),
     note: formData.get("note") ?? "",
     source: formData.get("source"),
     type: formData.get("type")

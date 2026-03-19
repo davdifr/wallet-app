@@ -74,6 +74,7 @@ Campi chiave:
 - `transaction_date`
 - `description`
 - `category`
+- `category_slug`
 - `merchant`
 - `notes`
 - `is_shared`
@@ -88,6 +89,7 @@ Osservazioni:
 - e usata sia per movimenti personali sia per effetti contabili di gruppo.
 - una transazione puo derivare da recurring income, shared expense o settlement.
 - `recurring_income_instance_key` impedisce duplicati durante la materializzazione.
+- `category_slug` e il riferimento tecnico al catalogo condiviso; `category` resta la label persistita e il ponte di compatibilita con lo storico.
 
 ### `recurring_incomes`
 
@@ -102,6 +104,7 @@ Campi chiave:
 - `currency`
 - `description`
 - `category`
+- `category_slug`
 - `source`
 - `frequency`
 - `starts_on`
@@ -114,6 +117,29 @@ Osservazioni:
 - la UI usa solo frequenze settimanali, mensili e annuali.
 - `next_occurrence_on` e il cursore operativo per la sincronizzazione.
 - la delete della ricorrenza rimuove la definizione ma non cancella le transazioni gia materializzate.
+- `category_slug` usa lo stesso catalogo income delle transazioni.
+
+## Catalogo categorie e compatibilita legacy
+
+Il catalogo categorie non vive in una tabella dedicata: e applicativo e condiviso via `lib/categories/catalog.ts`.
+
+### Schema dati attuale
+
+- `transactions.category_slug text null`
+- `recurring_incomes.category_slug text null`
+- `transactions.category` e `recurring_incomes.category` restano presenti come label persistita
+
+### Strategia adottata
+
+- nuove scritture: salvano slug + label canonica;
+- vecchi record: possono avere solo `category`;
+- letture: se `category_slug` manca, il service prova a risolvere alias legacy;
+- fallback: valori non riconosciuti restano leggibili ma vengono trattati come `Altro` nelle aggregazioni canoniche.
+
+### Migrazioni rilevanti
+
+- `supabase/categories.sql`: aggiunge `category_slug`, esegue backfill prudente degli alias storici piu comuni e crea indici mirati;
+- `supabase/normalize-legacy-categories.sql`: script opzionale per riscrivere solo le label storiche piu frequenti in forma canonica, senza toccare i casi ambigui.
 
 ### `monthly_budget_settings`
 

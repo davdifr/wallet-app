@@ -36,6 +36,10 @@
 
 La sicurezza contro duplicati dipende da `recurring_income_instance_key`. Se si tocca la logica di materializzazione, bisogna preservare questo comportamento.
 
+Nota aggiornata:
+
+- le ricorrenze materializzate salvano anche `category_slug` e devono restare coerenti con il catalogo income condiviso.
+
 ### 2. Settlement parziali
 
 Le quote di gruppo usano `settled_amount`, non solo un booleano. Qualsiasi modifica ai rimborsi deve mantenere la compatibilita con saldi parziali e settlement pendenti.
@@ -68,6 +72,16 @@ Header e bottom navigation mobile usano classi CSS basate su `env(safe-area-inse
 ### 8. Dashboard snella
 
 La dashboard non deve diventare una pagina di configurazione. I form lunghi o multi-step, soprattutto per il salvadanaio, dovrebbero stare in modali o viste dedicate.
+
+### 8-bis. Categorie condivise
+
+Il dominio categorie ora ha alcune regole importanti:
+
+- il catalogo condiviso vive in `lib/categories/catalog.ts`;
+- `transactions` e `recurring_incomes` salvano `category_slug` oltre alla label;
+- il codice deve preferire `category_slug` quando esiste;
+- lo storico senza slug va letto con compatibilita legacy, non rotto o riscritto in modo aggressivo;
+- la dashboard non deve frammentare le top categorie per alias storici simili.
 
 ### 9. Dominio gruppi live
 
@@ -106,6 +120,7 @@ Se si reinterviene sulla UX, evitare di riportare quote e settlement inline su o
 - centralizzare formattazione valuta/date e costanti condivise;
 - verificare completezza delle policy RLS per tutte le tabelle, non solo quelle lette nelle migrazioni.
 - aggiungere test piu diretti sul bridge realtime dei gruppi e su eventuali futuri eventi settlement live.
+- applicare in ambiente reale `supabase/categories.sql` e verificare il backfill effettivo delle categorie storiche residue.
 
 ### Priorita media
 
@@ -138,6 +153,7 @@ Se si reinterviene sulla UX, evitare di riportare quote e settlement inline su o
 - testare gestione `ends_on`;
 - testare duplicati su stessa occorrenza.
 - testare che la delete della ricorrenza non rimuova transazioni gia generate.
+- testare coerenza tra `category_slug` della ricorrenza e della transazione materializzata.
 
 ### Se tocchi saving goals
 
@@ -165,6 +181,13 @@ Se si reinterviene sulla UX, evitare di riportare quote e settlement inline su o
 - testare directory utenti se l'ambiente richiede nuove funzioni SQL.
 - testare unread/navbar se tocchi `shared_expenses`, `group_member_views` o subscription realtime.
 - testare che i badge di stato delle spese restino semanticamente coerenti: `Tutto regolato`, `Rimborsi in attesa`, `Quote da regolare`.
+
+### Se tocchi transazioni o categorie
+
+- testare validazione categoria per tipo (`income` vs `expense`);
+- testare edit record legacy non mappati;
+- testare filtri categoria con mix canonico/legacy;
+- testare dashboard top categorie con alias storici e con `category_slug` persistito.
 
 ## Strategia consigliata per nuove AI
 

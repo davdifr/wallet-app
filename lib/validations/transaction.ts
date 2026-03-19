@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import { categorySlugs } from "@/lib/categories/catalog";
+import {
+  getCategoryLabel,
+  isValidCategorySlug
+} from "@/lib/categories/catalog";
+
 export const transactionTypes = ["expense", "income"] as const;
 
 export const transactionSchema = z.object({
@@ -11,11 +17,10 @@ export const transactionSchema = z.object({
     .refine((value) => !Number.isNaN(Number(value)), "Importo non valido.")
     .refine((value) => Number(value) > 0, "L'importo deve essere maggiore di zero."),
   date: z.string().trim().min(1, "Seleziona una data."),
-  category: z
-    .string()
-    .trim()
-    .min(2, "La categoria deve avere almeno 2 caratteri.")
-    .max(50, "La categoria deve avere massimo 50 caratteri."),
+  categorySlug: z.enum(categorySlugs, {
+    errorMap: () => ({ message: "Seleziona una categoria supportata." })
+  }),
+  category: z.string().trim().max(50, "La categoria deve avere massimo 50 caratteri.").optional(),
   note: z
     .string()
     .trim()
@@ -29,6 +34,17 @@ export const transactionSchema = z.object({
   type: z.enum(transactionTypes, {
     errorMap: () => ({ message: "Seleziona un tipo valido." })
   })
-});
+}).superRefine((value, ctx) => {
+  if (!isValidCategorySlug(value.categorySlug, value.type)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["categorySlug"],
+      message: "Seleziona una categoria supportata."
+    });
+  }
+}).transform((value) => ({
+  ...value,
+  category: getCategoryLabel(value.categorySlug, value.type)
+}));
 
 export type TransactionSchemaInput = z.infer<typeof transactionSchema>;

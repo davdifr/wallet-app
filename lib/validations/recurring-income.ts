@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import {
+  getCategoryLabel,
+  incomeCategorySlugs,
+  isValidCategorySlug
+} from "@/lib/categories/catalog";
+
 export const recurringIncomeFrequencies = ["weekly", "monthly", "yearly"] as const;
 export const recurringIncomeIdSchema = z.string().uuid("Entrata ricorrente non valida.");
 
@@ -11,11 +17,14 @@ export const recurringIncomeSchema = z
       .min(1, "Inserisci un importo.")
       .refine((value) => !Number.isNaN(Number(value)), "Importo non valido.")
       .refine((value) => Number(value) > 0, "L'importo deve essere maggiore di zero."),
+    categorySlug: z.enum(incomeCategorySlugs, {
+      errorMap: () => ({ message: "Seleziona una categoria supportata." })
+    }),
     category: z
       .string()
       .trim()
-      .min(2, "La categoria deve avere almeno 2 caratteri.")
-      .max(50, "La categoria deve avere massimo 50 caratteri."),
+      .max(50, "La categoria deve avere massimo 50 caratteri.")
+      .optional(),
     description: z
       .string()
       .trim()
@@ -38,6 +47,19 @@ export const recurringIncomeSchema = z
       message: "La data di fine deve essere successiva o uguale alla data di inizio.",
       path: ["endsOn"]
     }
-  );
+  )
+  .superRefine((value, ctx) => {
+    if (!isValidCategorySlug(value.categorySlug, "income")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["categorySlug"],
+        message: "Seleziona una categoria di entrata supportata."
+      });
+    }
+  })
+  .transform((value) => ({
+    ...value,
+    category: getCategoryLabel(value.categorySlug, "income")
+  }));
 
 export type RecurringIncomeSchemaInput = z.infer<typeof recurringIncomeSchema>;

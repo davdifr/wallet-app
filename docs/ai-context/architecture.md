@@ -180,6 +180,7 @@ Sono presenti anche validazioni dedicate per:
 - salvadanaio (`movimenti` e `piano mensile`);
 - goal con `targetDate` opzionale lato UI;
 - vincoli di date mensili come il primo giorno del mese per l'attivazione dei piani automatici.
+- categorie transazioni e recurring incomes coerenti con il catalogo condiviso e con il tipo (`expense` o `income`).
 
 ## Calcoli di dominio
 
@@ -197,6 +198,33 @@ I moduli in `lib/` contengono logica pura riutilizzabile e testabile.
 - `lib/group-expenses/calculations.ts`: split, parsing custom values e saldo di gruppo.
 - `lib/group-expenses/unread-expenses.ts`: calcolo puro del flag unread per gruppo.
 - `lib/group-expenses/realtime.ts`: helper puri per decidere come reagire agli eventi realtime del dominio gruppi.
+- `lib/categories/catalog.ts`: catalogo condiviso categorie con slug stabile, label italiana, icona, alias legacy e helper di compatibilita.
+
+## Dominio categorie
+
+Il progetto usa ora un catalogo categorie condiviso tra transazioni, recurring incomes e dashboard.
+
+### Principi
+
+- slug tecnico stabile;
+- label UI in italiano;
+- icona predefinita dal catalogo;
+- scope per `expense` e `income`;
+- fallback `Altro` separato per spesa ed entrata.
+
+### Compatibilita storica
+
+- i nuovi record salvano sia `category_slug` sia `category`;
+- il codice legge prima `category_slug` se presente;
+- se manca, prova a risolvere `category` tramite alias legacy;
+- se il valore non e riconosciuto, mantiene il testo storico leggibile e usa fallback sicuro.
+
+### Implicazioni pratiche
+
+- i service fanno dual-read/dual-write;
+- i filtri categoria sulle transazioni lavorano su slug normalizzati quando possibile;
+- la dashboard aggrega le top categorie sulle categorie canoniche per ridurre frammentazione;
+- le ricorrenze materializzate generano transazioni con categorie canoniche coerenti.
 
 ## Pattern di stato lato client
 

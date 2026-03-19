@@ -73,7 +73,7 @@
 
 - importo;
 - data;
-- categoria;
+- categoria canonica con `category_slug` e label italiana derivata dal catalogo;
 - nota;
 - fonte/merchant;
 - tipo (`income` o `expense`).
@@ -84,8 +84,9 @@
 - La descrizione salvata in DB viene costruita automaticamente nel formato:
   `Income/Expense · categoria · source`.
 - La valuta e fissata a `EUR`.
-- Le categorie disponibili nei filtri vengono ricavate dalle transazioni esistenti.
+- Le categorie disponibili nei filtri vengono normalizzate sul catalogo condiviso quando possibile; le categorie legacy non riconosciute restano filtrabili come voce dedicata.
 - I mesi disponibili nei filtri vengono derivati dallo storico transazioni.
+- La lista transazioni mostra icona categoria e fallback sicuro per record legacy non mappati.
 
 ### Vincoli attuali
 
@@ -101,6 +102,7 @@
 - Eliminazione della definizione di ricorrenza senza cancellare retroattivamente le transazioni gia materializzate.
 - Materializzazione on-demand delle occorrenze mancanti in transazioni reali durante letture strategiche.
 - Prevenzione duplicati tramite chiave univoca per occorrenza.
+- Uso dello stesso catalogo categorie income delle transazioni manuali, con icona e label coerenti.
 
 ### Frequenze supportate oggi dalla UI
 
@@ -120,15 +122,17 @@
 3. Inserisce in `transactions` una riga `income` per ogni occorrenza.
 4. Salva metadati di relazione:
    `recurring_income_id`, `recurring_occurrence_date`, `recurring_income_instance_key`.
-5. Se l'occorrenza esiste gia, il vincolo univoco produce errore `23505` e l'app la conta come duplicato ignorato.
-6. Aggiorna `next_occurrence_on` alla prossima data utile.
-7. Se la ricorrenza ha superato `ends_on`, puo essere automaticamente disattivata.
+5. Salva anche `category_slug` e `category` canonici per evitare divergenze tra ricorrenze e transazioni manuali.
+6. Se l'occorrenza esiste gia, il vincolo univoco produce errore `23505` e l'app la conta come duplicato ignorato.
+7. Aggiorna `next_occurrence_on` alla prossima data utile.
+8. Se la ricorrenza ha superato `ends_on`, puo essere automaticamente disattivata.
 
 ### Note utili
 
 - Non esiste piu un pulsante manuale di sync in UI.
 - Non esiste ancora un job schedulato interno al repository: la sincronizzazione resta on-demand lato server.
 - Le transazioni create hanno note automatiche che indicano l'origine ricorrente.
+- Le ricorrenze storiche con categorie non normalizzate restano leggibili; le nuove materializzazioni usano comunque la categoria canonica del catalogo.
 
 ## 5. Saving Goals
 

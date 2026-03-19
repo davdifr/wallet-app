@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           amount: number;
           category: string | null;
+          category_slug: string | null;
           created_at: string;
           currency: string;
           description: string;
@@ -35,6 +36,7 @@ export type Database = {
         Insert: {
           amount: number;
           category?: string | null;
+          category_slug?: string | null;
           currency?: string;
           description: string;
           group_id?: string | null;
@@ -55,6 +57,7 @@ export type Database = {
         Update: {
           amount?: number;
           category?: string | null;
+          category_slug?: string | null;
           currency?: string;
           description?: string;
           group_id?: string | null;
@@ -77,6 +80,7 @@ export type Database = {
         Row: {
           amount: number;
           category: string | null;
+          category_slug: string | null;
           created_at: string;
           currency: string;
           description: string;
@@ -93,6 +97,7 @@ export type Database = {
         Insert: {
           amount: number;
           category?: string | null;
+          category_slug?: string | null;
           currency?: string;
           description: string;
           ends_on?: string | null;
@@ -107,6 +112,7 @@ export type Database = {
         Update: {
           amount?: number;
           category?: string | null;
+          category_slug?: string | null;
           currency?: string;
           description?: string;
           ends_on?: string | null;

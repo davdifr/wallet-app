@@ -1,7 +1,16 @@
+import {
+  getCategoryDefinition,
+  getFallbackCategory,
+  getCategoryLabel,
+  isValidCategorySlug,
+  resolveExpenseCategoryCompatibility,
+  resolveIncomeCategoryCompatibility
+} from "@/lib/categories/catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 import type {
   Transaction,
+  TransactionCategoryOption,
   TransactionFilters,
   TransactionFormValues
 } from "@/types/transactions";
@@ -9,6 +18,10 @@ import type {
 type TransactionInsert = Database["public"]["Tables"]["transactions"]["Insert"];
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 type TransactionUpdate = Database["public"]["Tables"]["transactions"]["Update"];
+type PersistableTransactionValues = Omit<TransactionFormValues, "id" | "category"> & {
+  category: string;
+};
+const LEGACY_CATEGORY_FILTER_PREFIX = "legacy:";
 
 function buildTransactionDescription(values: {
   category: string;
@@ -19,14 +32,35 @@ function buildTransactionDescription(values: {
 }
 
 function mapTransaction(row: Database["public"]["Tables"]["transactions"]["Row"]): Transaction {
+  const type = row.transaction_type === "income" ? "income" : "expense";
+  const persistedCategory =
+    row.category_slug && isValidCategorySlug(row.category_slug, type)
+      ? getCategoryDefinition(row.category_slug)
+      : null;
+  const compatibility =
+    persistedCategory
+      ? {
+          slug: persistedCategory.slug,
+          displayLabel: row.category?.trim() || persistedCategory.label,
+          canonicalLabel: persistedCategory.label,
+          originalLabel: row.category?.trim() || null,
+          isLegacyFallback: false,
+          wasMatched: true
+        }
+      : type === "income"
+        ? resolveIncomeCategoryCompatibility(row.category)
+        : resolveExpenseCategoryCompatibility(row.category);
+
   return {
     id: row.id,
     amount: row.amount,
     date: row.transaction_date,
-    category: row.category ?? "Uncategorized",
+    category: compatibility.displayLabel,
+    categorySlug: compatibility.slug,
+    isLegacyCategoryFallback: compatibility.isLegacyFallback,
     note: row.notes ?? "",
     source: row.merchant ?? row.description,
-    type: row.transaction_type === "income" ? "income" : "expense",
+    type,
     createdAt: row.created_at
   };
 }
@@ -51,6 +85,29 @@ function getMonthRange(month?: string) {
   };
 }
 
+function buildLegacyTransactionCategoryValue(category: string, type: "expense" | "income") {
+  return `${LEGACY_CATEGORY_FILTER_PREFIX}${type}:${encodeURIComponent(category)}`;
+}
+
+function parseLegacyTransactionCategoryValue(value: string) {
+  if (!value.startsWith(LEGACY_CATEGORY_FILTER_PREFIX)) {
+    return null;
+  }
+
+  const [type, encodedCategory] = value
+    .slice(LEGACY_CATEGORY_FILTER_PREFIX.length)
+    .split(":", 2);
+
+  if ((type !== "expense" && type !== "income") || !encodedCategory) {
+    return null;
+  }
+
+  return {
+    type,
+    category: decodeURIComponent(encodedCategory)
+  } as const;
+}
+
 export async function listTransactions(filters: TransactionFilters = {}) {
   const supabase = await createSupabaseServerClient();
   const { month, category, type } = filters;
@@ -70,10 +127,6 @@ export async function listTransactions(filters: TransactionFilters = {}) {
       .lte("transaction_date", monthRange.to);
   }
 
-  if (category) {
-    query = query.eq("category", category);
-  }
-
   if (type && type !== "all") {
     query = query.eq("transaction_type", type);
   }
@@ -85,8 +138,28 @@ export async function listTransactions(filters: TransactionFilters = {}) {
   }
 
   const rows: TransactionRow[] = data ?? [];
+  const mappedTransactions = rows.map(mapTransaction);
 
-  return rows.map(mapTransaction);
+  if (!category) {
+    return mappedTransactions;
+  }
+
+  if (isValidCategorySlug(category)) {
+    return mappedTransactions.filter((transaction) => transaction.categorySlug === category);
+  }
+
+  const legacyCategory = parseLegacyTransactionCategoryValue(category);
+
+  if (legacyCategory) {
+    return mappedTransactions.filter(
+      (transaction) =>
+        transaction.type === legacyCategory.type &&
+        transaction.isLegacyCategoryFallback &&
+        transaction.category === legacyCategory.category
+    );
+  }
+
+  return mappedTransactions.filter((transaction) => transaction.category === category);
 }
 
 export async function getTransactionById(id: string) {
@@ -112,24 +185,69 @@ export async function listTransactionCategories() {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("transactions")
-    .select("category")
+    .select("category, transaction_type")
     .in("transaction_type", ["expense", "income"])
     .not("category", "is", null)
+    .order("transaction_type", { ascending: true })
     .order("category", { ascending: true });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  const rows = (data ?? []) as Array<{ category: string | null }>;
+  const rows = (data ?? []) as Array<{
+    category: string | null;
+    transaction_type: "expense" | "income" | null;
+  }>;
+  const optionsByValue = new Map<string, TransactionCategoryOption>();
 
-  return Array.from(
-    new Set(
-      rows
-        .map((item) => item.category?.trim())
-        .filter((item): item is string => Boolean(item))
-    )
-  );
+  for (const row of rows) {
+    const rawCategory = row.category?.trim();
+    const rowType = row.transaction_type === "income" ? "income" : "expense";
+
+    if (!rawCategory) {
+      continue;
+    }
+
+    const compatibility =
+      rowType === "income"
+        ? resolveIncomeCategoryCompatibility(rawCategory)
+        : resolveExpenseCategoryCompatibility(rawCategory);
+
+    if (compatibility.wasMatched) {
+      optionsByValue.set(compatibility.slug, {
+        value: compatibility.slug,
+        label: compatibility.displayLabel,
+        categorySlug: compatibility.slug,
+        type: rowType,
+        isLegacy: false
+      });
+      continue;
+    }
+
+    const fallbackCategory = getFallbackCategory(rowType);
+    const legacyValue = buildLegacyTransactionCategoryValue(rawCategory, rowType);
+
+    optionsByValue.set(legacyValue, {
+      value: legacyValue,
+      label: rawCategory,
+      categorySlug: fallbackCategory.slug,
+      type: rowType,
+      isLegacy: true
+    });
+  }
+
+  return Array.from(optionsByValue.values()).sort((left, right) => {
+    if (left.isLegacy !== right.isLegacy) {
+      return left.isLegacy ? 1 : -1;
+    }
+
+    if (left.type !== right.type) {
+      return left.type.localeCompare(right.type);
+    }
+
+    return left.label.localeCompare(right.label, "it");
+  });
 }
 
 export async function listTransactionMonths() {
@@ -153,7 +271,7 @@ export async function listTransactionMonths() {
 
 export async function createTransaction(
   userId: string,
-  values: Omit<TransactionFormValues, "id">
+  values: PersistableTransactionValues
 ) {
   const supabase = await createSupabaseServerClient();
 
@@ -161,7 +279,8 @@ export async function createTransaction(
     user_id: userId,
     amount: Number(values.amount),
     transaction_date: values.date,
-    category: values.category,
+    category: getCategoryLabel(values.categorySlug, values.type),
+    category_slug: values.categorySlug,
     notes: values.note || null,
     merchant: values.source,
     description: buildTransactionDescription(values),
@@ -184,14 +303,15 @@ export async function createTransaction(
 
 export async function updateTransaction(
   transactionId: string,
-  values: Omit<TransactionFormValues, "id">
+  values: PersistableTransactionValues
 ) {
   const supabase = await createSupabaseServerClient();
 
   const payload: TransactionUpdate = {
     amount: Number(values.amount),
     transaction_date: values.date,
-    category: values.category,
+    category: getCategoryLabel(values.categorySlug, values.type),
+    category_slug: values.categorySlug,
     notes: values.note || null,
     merchant: values.source,
     description: buildTransactionDescription(values),

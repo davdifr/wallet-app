@@ -4,6 +4,7 @@ import { PauseCircle, PlayCircle, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCategoryIcon } from "@/lib/categories/catalog";
 import type { RecurringIncome } from "@/types/recurring-incomes";
 
 type RecurringIncomesListProps = {
@@ -51,74 +52,90 @@ export function RecurringIncomesList({
           </div>
         ) : (
           <div className="space-y-3">
-            {recurringIncomes.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium text-slate-950">{item.category}</p>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500">
-                      {item.frequency}
-                    </span>
-                    <span
-                      className={
-                        item.isActive
-                          ? "rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
-                          : "rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600"
-                      }
-                    >
-                      {item.isActive ? "attiva" : "disattivata"}
-                    </span>
+            {recurringIncomes.map((item) => {
+              const CategoryIcon = getCategoryIcon(item.categorySlug, "income");
+
+              return (
+                <div
+                  key={item.id}
+                  className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-2xl bg-white p-2 text-slate-700">
+                        <CategoryIcon className="h-4 w-4" />
+                      </span>
+                      <p className="font-medium text-slate-950">{item.category}</p>
+                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500">
+                        {item.frequency === "weekly"
+                          ? "settimanale"
+                          : item.frequency === "yearly"
+                            ? "annuale"
+                            : "mensile"}
+                      </span>
+                      <span
+                        className={
+                          item.isActive
+                            ? "rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
+                            : "rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600"
+                        }
+                      >
+                        {item.isActive ? "attiva" : "disattivata"}
+                      </span>
+                    </div>
+                    {item.isLegacyCategoryFallback ? (
+                      <p className="text-xs text-amber-700">
+                        Categoria storica non standard: le nuove occorrenze useranno il fallback del catalogo.
+                      </p>
+                    ) : null}
+                    <p className="text-sm text-slate-600">{item.description}</p>
+                    <p className="text-xs text-slate-500">
+                      {item.source} · prossimo evento {item.nextOccurrenceOn}
+                      {item.endsOn ? ` · fine ${item.endsOn}` : ""}
+                    </p>
                   </div>
-                  <p className="text-sm text-slate-600">{item.description}</p>
-                  <p className="text-xs text-slate-500">
-                    {item.source} · prossimo evento {item.nextOccurrenceOn}
-                    {item.endsOn ? ` · fine ${item.endsOn}` : ""}
-                  </p>
-                </div>
 
-                <div className="flex flex-col gap-3 sm:items-end">
-                  <p className="font-display text-2xl font-semibold text-emerald-600">
-                    {formatCurrency(item.amount)}
-                  </p>
+                  <div className="flex flex-col gap-3 sm:items-end">
+                    <p className="font-display text-2xl font-semibold text-emerald-600">
+                      {formatCurrency(item.amount)}
+                    </p>
 
-                  <div className="flex flex-wrap gap-2 sm:justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={loadingId === item.id || deletingId === item.id}
-                      onClick={() => onToggle(item.id, !item.isActive)}
-                    >
-                      {item.isActive ? (
-                        <PauseCircle className="h-4 w-4" />
-                      ) : (
-                        <PlayCircle className="h-4 w-4" />
-                      )}
-                      {loadingId === item.id
-                        ? "Aggiorno..."
-                        : item.isActive
-                          ? "Disattiva"
-                          : "Riattiva"}
-                    </Button>
+                    <div className="flex flex-wrap gap-2 sm:justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={loadingId === item.id || deletingId === item.id}
+                        onClick={() => onToggle(item.id, !item.isActive)}
+                      >
+                        {item.isActive ? (
+                          <PauseCircle className="h-4 w-4" />
+                        ) : (
+                          <PlayCircle className="h-4 w-4" />
+                        )}
+                        {loadingId === item.id
+                          ? "Aggiorno..."
+                          : item.isActive
+                            ? "Disattiva"
+                            : "Riattiva"}
+                      </Button>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                      disabled={loadingId === item.id || deletingId === item.id}
-                      onClick={() => onDelete(item)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      {deletingId === item.id ? "Elimino..." : "Elimina"}
-                    </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                        disabled={loadingId === item.id || deletingId === item.id}
+                        onClick={() => onDelete(item)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        {deletingId === item.id ? "Elimino..." : "Elimina"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getIncomeCategories } from "@/lib/categories/catalog";
 import { recurringIncomeSchema } from "@/lib/validations/recurring-income";
 import { cn } from "@/lib/utils";
 import type {
@@ -17,6 +18,7 @@ import type {
 const emptyValues: RecurringIncomeFormValues = {
   amount: "",
   category: "",
+  categorySlug: "salary",
   description: "",
   source: "",
   frequency: "monthly",
@@ -43,6 +45,7 @@ export function RecurringIncomeForm({
 }: RecurringIncomeFormProps) {
   const [values, setValues] = useState<RecurringIncomeFormValues>(emptyValues);
   const [state, setState] = useState<RecurringIncomeFormState>({ success: false });
+  const categoryOptions = getIncomeCategories();
 
   return (
     <form
@@ -103,28 +106,48 @@ export function RecurringIncomeForm({
               }))
             }
           >
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
+            <option value="weekly">Settimanale</option>
+            <option value="monthly">Mensile</option>
+            <option value="yearly">Annuale</option>
           </Select>
           <FieldError errors={state.errors?.frequency} />
         </div>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="category">Categoria</Label>
-          <Input
-            id="category"
-            name="category"
-            placeholder="Salary, Freelance..."
-            value={values.category}
-            onChange={(event) =>
-              setValues((current) => ({ ...current, category: event.target.value }))
-            }
-          />
-          <FieldError errors={state.errors?.category} />
+        <div className="space-y-2 sm:col-span-2">
+          <Label>Categoria</Label>
+          <input type="hidden" name="categorySlug" value={values.categorySlug} />
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {categoryOptions.map((category) => {
+              const Icon = category.icon;
+              const isSelected = values.categorySlug === category.slug;
+
+              return (
+                <button
+                  key={category.slug}
+                  type="button"
+                  onClick={() =>
+                    setValues((current) => ({
+                      ...current,
+                      categorySlug: category.slug
+                    }))
+                  }
+                  className={
+                    isSelected
+                      ? "flex items-center gap-2 rounded-2xl border border-slate-950 bg-slate-950 px-3 py-3 text-left text-white"
+                      : "flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-slate-700"
+                  }
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="text-sm font-medium leading-tight">{category.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <FieldError errors={state.errors?.categorySlug} />
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="source">Fonte</Label>
           <Input
@@ -198,7 +221,7 @@ export function RecurringIncomeForm({
       </div>
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Creazione in corso..." : "Crea recurring income"}
+        {isSubmitting ? "Creazione in corso..." : "Crea entrata ricorrente"}
       </Button>
     </form>
   );

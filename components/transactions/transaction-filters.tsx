@@ -1,12 +1,16 @@
 "use client";
 
+import { getCategoryIcon } from "@/lib/categories/catalog";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import type { TransactionFilters as TransactionFilterValues } from "@/types/transactions";
+import type {
+  TransactionCategoryOption,
+  TransactionFilters as TransactionFilterValues
+} from "@/types/transactions";
 
 type TransactionFiltersProps = {
   availableMonths: string[];
-  categories: string[];
+  categories: TransactionCategoryOption[];
   filters: TransactionFilterValues;
   loading?: boolean;
   onApply: (filters: TransactionFilterValues) => void;
@@ -32,6 +36,18 @@ export function TransactionFilters({
   loading = false,
   onApply
 }: TransactionFiltersProps) {
+  const visibleCategories = categories.filter((category) => {
+    if (!filters.type || filters.type === "all") {
+      return true;
+    }
+
+    return category.type === filters.type;
+  });
+  const selectedCategory = categories.find((category) => category.value === filters.category);
+  const SelectedCategoryIcon = selectedCategory
+    ? getCategoryIcon(selectedCategory.categorySlug, selectedCategory.type)
+    : null;
+
   return (
     <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:grid-cols-2 xl:grid-cols-3">
       <div className="space-y-2">
@@ -72,12 +88,25 @@ export function TransactionFilters({
           }
         >
           <option value="">Tutte</option>
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
+          {visibleCategories.map((category) => (
+            <option key={category.value} value={category.value}>
+              {category.type === "income" && (!filters.type || filters.type === "all")
+                ? `Entrata · ${category.label}`
+                : category.type === "expense" && (!filters.type || filters.type === "all")
+                  ? `Spesa · ${category.label}`
+                  : category.label}
             </option>
           ))}
         </Select>
+        {selectedCategory && SelectedCategoryIcon ? (
+          <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
+            <SelectedCategoryIcon className="h-3.5 w-3.5" />
+            <span>{selectedCategory.label}</span>
+            {selectedCategory.isLegacy ? (
+              <span className="text-slate-400">storica</span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -95,8 +124,8 @@ export function TransactionFilters({
           }
         >
           <option value="all">Tutti</option>
-          <option value="expense">Expense</option>
-          <option value="income">Income</option>
+          <option value="expense">Spese</option>
+          <option value="income">Entrate</option>
         </Select>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import type { IncomeCategorySlug } from "@/lib/categories/catalog";
 import type { Database } from "@/types/database";
 
 export type RecurringIncomeFrequency = Extract<
@@ -9,6 +10,8 @@ export type RecurringIncome = {
   id: string;
   amount: number;
   category: string;
+  categorySlug?: IncomeCategorySlug | null;
+  isLegacyCategoryFallback?: boolean;
   description: string;
   source: string;
   frequency: RecurringIncomeFrequency;
@@ -21,7 +24,8 @@ export type RecurringIncome = {
 
 export type RecurringIncomeFormValues = {
   amount: string;
-  category: string;
+  category?: string;
+  categorySlug: IncomeCategorySlug;
   description: string;
   source: string;
   frequency: RecurringIncomeFrequency;

@@ -17,7 +17,7 @@ export async function createRecurringIncomeAction(
 ): Promise<RecurringIncomeFormState> {
   const parsed = recurringIncomeSchema.safeParse({
     amount: formData.get("amount"),
-    category: formData.get("category"),
+    categorySlug: formData.get("categorySlug"),
     description: formData.get("description"),
     source: formData.get("source"),
     frequency: formData.get("frequency"),

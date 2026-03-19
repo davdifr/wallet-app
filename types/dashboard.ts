@@ -1,3 +1,4 @@
+import type { ExpenseCategorySlug } from "@/lib/categories/catalog";
 import type { DailyBudgetResult } from "@/lib/budget/daily-budget";
 import type { PiggyBankSummary } from "@/types/piggy-bank";
 
@@ -5,6 +6,8 @@ export type DashboardTopCategory = {
   name: string;
   amount: string;
   value: number;
+  categorySlug: ExpenseCategorySlug;
+  isLegacyFallback?: boolean;
   colorClassName: string;
 };
 

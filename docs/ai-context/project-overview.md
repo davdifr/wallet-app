@@ -31,6 +31,7 @@ L'app e pensata come base full-stack pronta a crescere, non come MVP puramente s
 - `Saving Goals`: creazione goal con target, priorita e contributi manuali, con previsione automatica del tempo al raggiungimento.
 - `Piggy Bank`: dominio separato dai goal per fondi vincolati, con movimenti manuali e piano mensile automatico.
 - `Group Expenses`: gruppi, membri registrati o guest, spese condivise, quote e workflow di settlement.
+- `Category Catalog`: catalogo condiviso di categorie fisse con slug tecnico stabile, label italiana, icona e compatibilita legacy.
 
 ## Esperienza utente attuale
 
@@ -41,6 +42,7 @@ L'app e pensata come base full-stack pronta a crescere, non come MVP puramente s
 - La navigazione tra tab principali viene preriscaldata con prefetch di route e dati per ridurre i caricamenti percepiti.
 - L'app espone metadata PWA, manifest e icone Apple; il layout mobile gestisce anche le safe area iPhone in modalita homescreen standalone.
 - UI in italiano, con naming tecnico talvolta misto inglese/italiano.
+- Transazioni, recurring incomes e dashboard usano un catalogo categorie condiviso con icone predefinite e fallback per dati storici non normalizzati.
 - La dashboard e stata alleggerita: la card principale e il daily budget; il salvadanaio usa una card compatta con una modale unica di gestione.
 - Il dominio gruppi ha aggiornamenti realtime per nuove spese condivise e settlement, usati per badge unread, navbar e riallineamento delle viste senza refresh manuale.
 - La sezione spese di gruppo e stata resa piu navigabile: lista compatta, filtri locali, ordinamento locale e dettaglio spesa in modale.
@@ -61,7 +63,8 @@ L'app e pensata come base full-stack pronta a crescere, non come MVP puramente s
 3. TanStack Query gestisce cache, refetch, invalidazione e sincronizzazione cross-tab dei dati principali.
 4. I service layer parlano con Supabase e incapsulano mapping tra righe database e tipi frontend.
 5. Le validazioni avvengono con Zod prima di arrivare alla logica di dominio.
-6. Per il dominio `groups`, alcuni aggiornamenti collaborativi passano anche da Supabase Realtime oltre che da invalidazione e sync cross-tab.
+6. Il dominio categorie usa dual-read/dual-write: nuove scritture persistono anche `category_slug`, mentre lo storico continua a essere letto con compatibilita legacy.
+7. Per il dominio `groups`, alcuni aggiornamenti collaborativi passano anche da Supabase Realtime oltre che da invalidazione e sync cross-tab.
 
 ### Dashboard
 

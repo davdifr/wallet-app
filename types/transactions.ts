@@ -1,3 +1,4 @@
+import type { ExpenseCategorySlug, IncomeCategorySlug } from "@/lib/categories/catalog";
 import type { Database } from "@/types/database";
 
 export type TransactionType = Extract<
@@ -12,10 +13,20 @@ export type Transaction = {
   amount: number;
   date: string;
   category: string;
+  categorySlug?: ExpenseCategorySlug | IncomeCategorySlug | null;
+  isLegacyCategoryFallback?: boolean;
   note: string;
   source: string;
   type: TransactionType;
   createdAt: string;
+};
+
+export type TransactionCategoryOption = {
+  value: string;
+  label: string;
+  categorySlug: ExpenseCategorySlug | IncomeCategorySlug;
+  type: TransactionType;
+  isLegacy: boolean;
 };
 
 export type TransactionFilters = {
@@ -28,7 +39,8 @@ export type TransactionFormValues = {
   id?: string;
   amount: string;
   date: string;
-  category: string;
+  category?: string;
+  categorySlug: ExpenseCategorySlug | IncomeCategorySlug;
   note: string;
   source: string;
   type: TransactionType;

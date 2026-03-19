@@ -1,3 +1,7 @@
+import {
+  findExpenseCategoryByLegacyValue,
+  getExpenseFallbackCategory
+} from "@/lib/categories/catalog";
 import { calculateSavingGoalMetrics } from "@/lib/saving-goals/calculations";
 import { sortSavingGoals } from "@/lib/saving-goals/sorting";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -5,6 +9,7 @@ import { getBudgetSnapshot } from "@/services/budget/budget-service";
 import type { DashboardApiData, DashboardData } from "@/types/dashboard";
 import type { Database } from "@/types/database";
 import type { SavingGoal } from "@/types/saving-goals";
+import type { ExpenseCategorySlug } from "@/lib/categories/catalog";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 type SavingGoalRow = Database["public"]["Tables"]["saving_goals"]["Row"];
@@ -191,19 +196,41 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
   const topCategories = Array.from(
     transactionRows
       .filter((transaction) => transaction.transaction_type === "expense")
-      .reduce<Map<string, number>>((accumulator, transaction) => {
-        const category = transaction.category?.trim() || "Uncategorized";
-        accumulator.set(category, (accumulator.get(category) ?? 0) + transaction.amount);
+      .reduce<
+        Map<
+          string,
+          {
+            name: string;
+            value: number;
+            categorySlug: ExpenseCategorySlug;
+            isLegacyFallback: boolean;
+          }
+        >
+      >((accumulator, transaction) => {
+        const matchedCategory = findExpenseCategoryByLegacyValue(transaction.category);
+        const fallbackCategory = getExpenseFallbackCategory();
+        const normalizedCategory = matchedCategory ?? fallbackCategory;
+        const key = normalizedCategory.slug;
+        const current = accumulator.get(key);
+
+        accumulator.set(key, {
+          name: normalizedCategory.label,
+          value: (current?.value ?? 0) + transaction.amount,
+          categorySlug: normalizedCategory.slug,
+          isLegacyFallback: !matchedCategory
+        });
         return accumulator;
       }, new Map())
-      .entries()
+      .values()
   )
-    .sort((left, right) => right[1] - left[1])
+    .sort((left, right) => right.value - left.value)
     .slice(0, 4)
-    .map(([name, value], index) => ({
-      name,
-      amount: formatCurrency(value),
-      value: roundCurrency(value),
+    .map((item, index) => ({
+      name: item.name,
+      amount: formatCurrency(item.value),
+      value: roundCurrency(item.value),
+      categorySlug: item.categorySlug,
+      isLegacyFallback: item.isLegacyFallback,
       colorClassName: topCategoryColors[index % topCategoryColors.length]
     }));
 

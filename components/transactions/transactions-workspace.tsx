@@ -15,6 +15,7 @@ import { queryKeys } from "@/lib/query/query-keys";
 import { publishSyncEvent } from "@/lib/query/sync-events";
 import type {
   Transaction,
+  TransactionCategoryOption,
   TransactionFilters,
   TransactionFormState,
   TransactionFormValues
@@ -26,7 +27,7 @@ const TransactionForm = dynamic(
 
 type TransactionsWorkspaceProps = {
   availableMonths: string[];
-  categories: string[];
+  categories: TransactionCategoryOption[];
   initialEditingTransaction: Transaction | null;
   initialFilters: TransactionFilters;
   initialTransactions: Transaction[];
@@ -34,7 +35,7 @@ type TransactionsWorkspaceProps = {
 
 type TransactionsApiResponse = {
   availableMonths: string[];
-  categories: string[];
+  categories: TransactionCategoryOption[];
   transactions: Transaction[];
 };
 
@@ -263,7 +264,6 @@ export function TransactionsWorkspace({
         }
       >
         <TransactionForm
-          categories={transactionData.categories}
           initialValues={editingTransaction}
           isSubmitting={saveTransactionMutation.isPending}
           onCancelEdit={() => {
