@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
-import { useGroupExpensesRealtimeSync } from "@/components/groups/use-group-expenses-realtime-sync";
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { GroupExpensesSection } from "@/components/groups/group-expenses-section";
 import { GroupMembersSection } from "@/components/groups/group-members-section";
@@ -70,8 +69,6 @@ export function GroupDetailWorkspace({
     }),
     [initialCurrentUserId, initialGroup, initialInviteCandidates]
   );
-
-  useGroupExpensesRealtimeSync({ groupId: initialGroup.group.id });
 
   const groupQuery = useQuery({
     queryKey: queryKeys.groups.detail(initialGroup.group.id),
@@ -173,9 +170,14 @@ export function GroupDetailWorkspace({
     },
     onError: () => {
       setGroupUnreadFlag(true);
-      setHasAttemptedMarkViewed(false);
     }
   });
+
+  useEffect(() => {
+    if (!group.group.hasUnreadExpenses && hasAttemptedMarkViewed && !markViewedMutation.isPending) {
+      setHasAttemptedMarkViewed(false);
+    }
+  }, [group.group.hasUnreadExpenses, hasAttemptedMarkViewed, markViewedMutation.isPending]);
 
   async function syncGroupsDomain() {
     await invalidateDomainQueries(queryClient, "groups");
@@ -252,6 +254,7 @@ export function GroupDetailWorkspace({
         },
         body: JSON.stringify(values)
       });
+      setGroupUnreadFlag(false);
       await syncGroupsDomain();
       return { success: true, message: "Spesa condivisa creata." };
     } catch (error) {

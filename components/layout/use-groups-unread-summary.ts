@@ -18,8 +18,9 @@ export function useGroupsUnreadSummary() {
         credentials: "same-origin",
         cache: "no-store"
       }),
-    staleTime: 15_000,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true
+    staleTime: 5 * 60_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true
   });
 }

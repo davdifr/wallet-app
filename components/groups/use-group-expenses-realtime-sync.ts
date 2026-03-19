@@ -4,11 +4,11 @@ import { useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
+import { shouldEnableUnreadGroupsFromSharedExpenseEvent } from "@/lib/group-expenses/realtime";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query/query-keys";
 
 type UseGroupExpensesRealtimeSyncOptions = {
-  groupId?: string;
   currentUserId?: string;
 };
 
@@ -17,13 +17,25 @@ export function useGroupExpensesRealtimeSync(
 ) {
   const queryClient = useQueryClient();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const groupId = options.groupId ?? null;
   const currentUserId = options.currentUserId ?? null;
 
   useEffect(() => {
-    const channelName = groupId
-      ? `groups-shared-expenses-${groupId}`
-      : "groups-shared-expenses";
+    const channelName = `groups-realtime-${currentUserId ?? "anonymous"}`;
+
+    const refreshGroupsQueries = () => {
+      void queryClient.refetchQueries({
+        queryKey: queryKeys.groups.unreadSummary,
+        type: "active"
+      });
+      void queryClient.refetchQueries({
+        queryKey: queryKeys.groups.all,
+        type: "active"
+      });
+      void queryClient.refetchQueries({
+        queryKey: queryKeys.groups.detailRoot,
+        type: "active"
+      });
+    };
 
     const handleSharedExpenseChange = (
       payload: RealtimePostgresChangesPayload<{
@@ -35,15 +47,16 @@ export function useGroupExpensesRealtimeSync(
         payload.eventType === "DELETE"
           ? null
           : (payload.new as { created_by_user_id?: string | null; group_id?: string } | null);
-      const changedGroupId = nextRow?.group_id ?? groupId;
+      const changedGroupId = nextRow?.group_id ?? null;
       const createdByUserId = nextRow?.created_by_user_id ?? null;
 
       if (
-        !groupId &&
-        payload.eventType === "INSERT" &&
         changedGroupId &&
-        createdByUserId !== null &&
-        createdByUserId !== currentUserId
+        shouldEnableUnreadGroupsFromSharedExpenseEvent({
+          eventType: payload.eventType,
+          createdByUserId,
+          currentUserId
+        })
       ) {
         queryClient.setQueryData<{ hasUnreadGroups: boolean }>(
           queryKeys.groups.unreadSummary,
@@ -51,13 +64,11 @@ export function useGroupExpensesRealtimeSync(
         );
       }
 
-      void queryClient.invalidateQueries({ queryKey: queryKeys.groups.all });
+      refreshGroupsQueries();
+    };
 
-      if (groupId) {
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.groups.detail(groupId)
-        });
-      }
+    const handleSettlementChange = () => {
+      refreshGroupsQueries();
     };
 
     const subscription = supabase
@@ -67,15 +78,23 @@ export function useGroupExpensesRealtimeSync(
         {
           event: "*",
           schema: "public",
-          table: "shared_expenses",
-          ...(groupId ? { filter: `group_id=eq.${groupId}` } : {})
+          table: "shared_expenses"
         },
         handleSharedExpenseChange
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "settlements"
+        },
+        handleSettlementChange
       )
       .subscribe();
 
     return () => {
       void supabase.removeChannel(subscription);
     };
-  }, [currentUserId, groupId, queryClient, supabase]);
+  }, [currentUserId, queryClient, supabase]);
 }

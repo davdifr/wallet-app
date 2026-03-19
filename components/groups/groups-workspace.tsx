@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
-import { useGroupExpensesRealtimeSync } from "@/components/groups/use-group-expenses-realtime-sync";
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { GroupsList } from "@/components/groups/groups-list";
 import { Badge } from "@/components/ui/badge";
@@ -42,8 +41,6 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
     () => ({ currentUserId: null, groups: initialGroups }),
     [initialGroups]
   );
-
-  useGroupExpensesRealtimeSync();
 
   const groupsQuery = useQuery({
     queryKey: queryKeys.groups.all,
