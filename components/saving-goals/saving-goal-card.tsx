@@ -2,7 +2,6 @@ import { useState } from "react";
 import { CalendarClock, Flag, PiggyBank, Trash2 } from "lucide-react";
 
 import { GoalContributionForm } from "@/components/saving-goals/goal-contribution-form";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
@@ -171,37 +170,25 @@ export function SavingGoalCard({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span className="rounded-full bg-secondary px-3 py-2">
-              Protetti oggi {formatCurrency(metrics.monthlyAllocableAmount)}
-            </span>
-            <span className="rounded-full bg-secondary px-3 py-2">
-              Storico {formatCurrency(metrics.totalManualContributionAmount)}
-            </span>
-            {latestContribution ? (
-              <span className="rounded-full bg-secondary px-3 py-2">
-                Ultimo {formatCurrency(latestContribution.amount)} · {latestContribution.contributionDate}
-              </span>
-            ) : null}
-          </div>
-
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Button type="button" className="w-full sm:w-auto" onClick={() => setIsContributionModalOpen(true)}>
-              Aggiungi fondi
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              disabled={isDeleting}
-              onClick={() => onDelete(goal)}
-            >
-              <Trash2 className="h-4 w-4" />
-              {isDeleting ? "Elimino..." : "Elimina"}
-            </Button>
-          </div>
+        <div className="mt-5 flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            onClick={() => setIsContributionModalOpen(true)}
+          >
+            Aggiungi fondi
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto"
+            disabled={isDeleting}
+            onClick={() => onDelete(goal)}
+          >
+            <Trash2 className="h-4 w-4" />
+            {isDeleting ? "Elimino..." : "Elimina"}
+          </Button>
         </div>
       </article>
 
