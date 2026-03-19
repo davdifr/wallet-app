@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, ShieldCheck, Wallet } from "lucide-react";
 
@@ -35,18 +34,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               Gestisci il tuo wallet con un dashboard pulito, veloce e sicuro.
             </h1>
             <p className="max-w-lg text-base text-muted-foreground sm:text-lg">
-              Base full-stack pronta per crescere: Next.js App Router, Supabase,
-              route protette e una UI minimal mobile-first.
+              Tieni sotto controllo entrate, spese, obiettivi e risparmi in un unico spazio semplice da usare.
             </p>
           </div>
           <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
             <div className="rounded-2xl border border-input bg-card p-4">
               <ShieldCheck className="mb-3 h-5 w-5 text-muted-foreground" />
-              Accesso OAuth con Google e sessione sincronizzata lato server.
+              Accesso rapido e protetto con il tuo account Google.
             </div>
             <div className="rounded-2xl border border-input bg-card p-4">
               <Wallet className="mb-3 h-5 w-5 text-muted-foreground" />
-              Architettura divisa per componenti, servizi, hook e types.
+              Tutte le funzioni principali del wallet a portata di mano, anche da mobile.
             </div>
           </div>
         </div>
@@ -54,8 +52,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <AuthCard
           footer={
             <p className="text-center text-xs text-muted-foreground">
-              Continuando accetti il flusso OAuth di Google configurato su
-              Supabase.
+              Continuando userai l&apos;accesso con Google per entrare nel tuo wallet.
             </p>
           }
         >
@@ -82,11 +79,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           ) : null}
 
           <p className="text-center text-sm text-muted-foreground">
-            Dopo il login verrai reindirizzato su{" "}
-            <Link href="/dashboard" className="font-medium text-foreground underline">
-              dashboard
-            </Link>
-            .
+            Dopo l&apos;accesso entrerai subito nella tua area personale.
           </p>
         </AuthCard>
       </div>
