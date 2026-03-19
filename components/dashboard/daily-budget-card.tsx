@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 type DailyBudgetCardProps = {
   result: DailyBudgetResult;
   totalWealth: string;
+  incomeLabel: string;
+  expensesLabel: string;
 };
 
 function formatCurrency(value: number) {
@@ -53,9 +55,32 @@ function buildNote(result: DailyBudgetResult) {
   return "Il margine di oggi tiene insieme spendibile, salvadanaio e protezione dei goal.";
 }
 
-export function DailyBudgetCard({ result, totalWealth }: DailyBudgetCardProps) {
+export function DailyBudgetCard({
+  result,
+  totalWealth,
+  incomeLabel,
+  expensesLabel
+}: DailyBudgetCardProps) {
   const status = statusCopy[result.status];
   const StatusIcon = status.icon;
+  const protectedBalance = result.blockedInPiggyBank + result.protectedForGoals;
+  const monthProgress = Math.min(
+    100,
+    Math.max(0, (result.daysElapsed / Math.max(result.daysInMonth, 1)) * 100)
+  );
+  const summaryItems = [
+    { label: "Totale", value: totalWealth, tone: "text-white" },
+    {
+      label: "Disponibile",
+      value: formatCurrency(result.remainingMonthlyBudget),
+      tone: "text-[#55C7FF]"
+    },
+    {
+      label: "Protetto",
+      value: formatCurrency(protectedBalance),
+      tone: "text-[#7DF4C2]"
+    }
+  ] as const;
 
   return (
     <Card className="overflow-hidden rounded-[1.9rem] border border-white/6 bg-[#101725] text-white shadow-[0_18px_42px_rgba(0,0,0,0.24)]">
@@ -82,38 +107,50 @@ export function DailyBudgetCard({ result, totalWealth }: DailyBudgetCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-4 px-5 pb-5 sm:px-6 sm:pb-6">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-[1.2rem] bg-white/[0.03] px-4 py-4">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Spendibile mese</p>
-            <p className="mt-2 text-lg font-semibold tracking-tight text-white">
-              {formatCurrency(result.remainingMonthlyBudget)}
-            </p>
-          </div>
-          <div className="rounded-[1.2rem] bg-white/[0.03] px-4 py-4">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Salvadanaio</p>
-            <p className="mt-2 text-lg font-semibold tracking-tight text-[#7DF4C2]">
-              {formatCurrency(result.blockedInPiggyBank)}
-            </p>
-          </div>
-          <div className="rounded-[1.2rem] bg-white/[0.03] px-4 py-4">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Riserva</p>
-            <p className="mt-2 text-lg font-semibold tracking-tight text-slate-200">
-              {formatCurrency(result.remainingMonthReserve)}
-            </p>
-          </div>
-          <div className="rounded-[1.2rem] bg-white/[0.03] px-4 py-4">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Goal protetti</p>
-            <p className="mt-2 text-lg font-semibold tracking-tight text-[#FF92B1]">
-              {formatCurrency(result.protectedForGoals)}
-            </p>
-          </div>
+        <div className="grid grid-cols-3 gap-2">
+          {summaryItems.map((item) => (
+            <div key={item.label} className="rounded-[1.1rem] bg-white/[0.03] px-3 py-3">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">{item.label}</p>
+              <p className={cn("mt-2 text-[0.98rem] font-semibold tracking-tight", item.tone)}>
+                {item.value}
+              </p>
+            </div>
+          ))}
         </div>
 
         <div className="rounded-[1.2rem] bg-[#0D1320] px-4 py-4">
-          <p className="text-sm leading-6 text-slate-300">{buildNote(result)}</p>
-          <p className="mt-2 text-xs leading-5 text-slate-500">
-            Patrimonio totale {totalWealth} · Restano {formatCurrency(result.remainingMonthlyBudget)} da distribuire fino a fine mese.
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Mese in corso</p>
+              <p className="mt-1 text-sm text-slate-300">
+                Giorno {result.daysElapsed} di {result.daysInMonth}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Andamento</p>
+              <p className="mt-1 text-sm text-slate-300">{buildNote(result)}</p>
+            </div>
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/8">
+            <div
+              className="h-full rounded-full bg-[#55C7FF] transition-all"
+              style={{ width: `${monthProgress}%` }}
+            />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-[1rem] bg-white/[0.03] px-3 py-3">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Entrate</p>
+              <p className="mt-2 text-[0.98rem] font-semibold tracking-tight text-white">
+                {incomeLabel}
+              </p>
+            </div>
+            <div className="rounded-[1rem] bg-white/[0.03] px-3 py-3">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Spese</p>
+              <p className="mt-2 text-[0.98rem] font-semibold tracking-tight text-white">
+                {expensesLabel}
+              </p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

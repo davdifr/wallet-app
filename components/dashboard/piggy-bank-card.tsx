@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarClock, PiggyBank, TrendingUp } from "lucide-react";
+import { CalendarClock, ChevronDown, ChevronUp, PiggyBank, TrendingUp } from "lucide-react";
 
 import { DashboardShellCard } from "@/components/dashboard/dashboard-shell-card";
 import { Button } from "@/components/ui/button";
@@ -246,6 +246,7 @@ export function PiggyBankCard({
   onSubmitMovement,
   onSubmitSettings
 }: PiggyBankCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<PiggyBankModalTab>("manual_add");
   const [movementValues, setMovementValues] = useState<PiggyBankMovementFormValues>({
@@ -290,100 +291,121 @@ export function PiggyBankCard({
     <>
       <DashboardShellCard
         title="Salvadanaio"
-        subtitle="Fondi protetti, ma sempre dentro al patrimonio"
-        action={<PiggyBank className="mt-1 h-4 w-4 text-slate-500" />}
+        subtitle="Protetto e richiamabile quando serve"
+        action={
+          <button
+            type="button"
+            className="flex h-10 w-10 items-center justify-center rounded-[1rem] bg-white/[0.04] text-slate-400 transition hover:text-white"
+            aria-label={isExpanded ? "Comprimi salvadanaio" : "Espandi salvadanaio"}
+            onClick={() => setIsExpanded((current) => !current)}
+          >
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        }
         contentClassName="space-y-4"
       >
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
-          <div className="rounded-[1.2rem] bg-white/[0.03] p-5 text-white">
-            <p className="text-sm text-slate-400">Saldo protetto</p>
-            <p className="mt-2 font-display text-[2.1rem] font-semibold tracking-tight text-[#7DF4C2]">
-              {formatCurrency(summary.balance)}
-            </p>
-            <p className="mt-2 text-sm text-slate-400">
-              Non rientra nel denaro spendibile di oggi.
-            </p>
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="rounded-[1.1rem] bg-white/[0.03] p-4">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Protetto</p>
+              <p className="mt-2 text-lg font-semibold tracking-tight text-[#7DF4C2]">
+                {formatCurrency(summary.balance)}
+              </p>
+            </div>
+            <div className="rounded-[1.1rem] bg-white/[0.03] p-4">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Piano</p>
+              <p className="mt-2 text-lg font-semibold tracking-tight text-white">
+                {formatCurrency(summary.settings?.autoMonthlyAmount ?? 0)}
+              </p>
+            </div>
+            <div className="rounded-[1.1rem] bg-white/[0.03] p-4 sm:col-span-1 col-span-2">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Stato</p>
+              <p className="mt-2 text-sm font-medium text-slate-300">
+                {summary.settings?.isAutoEnabled ? "Piano attivo" : "Solo manuale"}
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-2">
-            <Button
-              type="button"
-              className="w-full"
-              onClick={() => openManageModal("manual_add")}
-            >
-              Gestisci salvadanaio
+            <Button type="button" className="w-full sm:w-auto" onClick={() => openManageModal("manual_add")}>
+              Gestisci
             </Button>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-[1.2rem] bg-[#0D1320] p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-white">
-              <CalendarClock className="h-4 w-4 text-slate-400" />
-              Piano mensile
-            </div>
-            <p className="mt-2 text-sm text-slate-400">{planStatusLabel}</p>
-            <p className="mt-4 text-xl font-semibold tracking-tight text-white">
-              {formatCurrency(summary.settings?.autoMonthlyAmount ?? 0)}
-            </p>
-          </div>
-
-          <div className="rounded-[1.2rem] bg-[#0D1320] p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-white">
-              <TrendingUp className="h-4 w-4 text-slate-400" />
-              Ultimo movimento
-            </div>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              {summary.recentMovements.length === 0
-                ? "Nessun movimento recente registrato."
-                : `${summary.recentMovements[0]?.movementType === "manual_release" ? "Svincolo" : "Movimento"} del ${summary.recentMovements[0]?.movementDate}.`}
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-white">Ultimi movimenti</p>
-            <button
-              type="button"
-              className="text-xs font-medium text-slate-400 transition"
-              onClick={() => openManageModal("manual_add")}
-            >
-              Nuovo movimento
-            </button>
-          </div>
-          {summary.recentMovements.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-slate-400">
-              Nessun movimento registrato nel salvadanaio.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {summary.recentMovements.slice(0, 2).map((movement) => (
-                <div
-                  key={movement.id}
-                  className="flex items-center justify-between rounded-[1.1rem] bg-white/[0.03] px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      {movement.movementType === "manual_release"
-                        ? "Svincolo"
-                        : movement.movementType === "manual_add"
-                          ? "Aggiunta"
-                          : "Allocazione automatica"}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {movement.movementDate}
-                      {movement.note ? ` · ${movement.note}` : ""}
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-white">
-                    {formatCurrency(movement.amount)}
-                  </p>
+        {isExpanded ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[1.2rem] bg-[#0D1320] p-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-white">
+                  <PiggyBank className="h-4 w-4 text-slate-400" />
+                  Saldo protetto
                 </div>
-              ))}
+                <p className="mt-2 font-display text-[2rem] font-semibold tracking-tight text-[#7DF4C2]">
+              {formatCurrency(summary.balance)}
+                </p>
+                <p className="mt-2 text-sm text-slate-400">
+                  Non rientra nel denaro spendibile di oggi.
+                </p>
+              </div>
+
+              <div className="rounded-[1.2rem] bg-[#0D1320] p-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-white">
+                  <CalendarClock className="h-4 w-4 text-slate-400" />
+                  Piano mensile
+                </div>
+                <p className="mt-2 text-sm text-slate-400">{planStatusLabel}</p>
+                <p className="mt-4 text-xl font-semibold tracking-tight text-white">
+                  {formatCurrency(summary.settings?.autoMonthlyAmount ?? 0)}
+                </p>
+              </div>
             </div>
-          )}
-        </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-white">Ultimi movimenti</p>
+                <button
+                  type="button"
+                  className="text-xs font-medium text-slate-400 transition"
+                  onClick={() => openManageModal("manual_add")}
+                >
+                  Nuovo movimento
+                </button>
+              </div>
+              {summary.recentMovements.length === 0 ? (
+                <div className="rounded-[1.1rem] border border-dashed border-white/10 px-4 py-6 text-sm text-slate-400">
+                  Nessun movimento registrato nel salvadanaio.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {summary.recentMovements.slice(0, 2).map((movement) => (
+                    <div
+                      key={movement.id}
+                      className="flex items-center justify-between rounded-[1.1rem] bg-white/[0.03] px-4 py-3"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-white">
+                          {movement.movementType === "manual_release"
+                            ? "Svincolo"
+                            : movement.movementType === "manual_add"
+                              ? "Aggiunta"
+                              : "Allocazione automatica"}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {movement.movementDate}
+                          {movement.note ? ` · ${movement.note}` : ""}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-white">
+                        {formatCurrency(movement.amount)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : null}
 
         {message ? (
           <div className="rounded-[1.1rem] bg-white/[0.03] px-4 py-3 text-sm text-slate-300">

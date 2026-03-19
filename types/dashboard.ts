@@ -1,3 +1,4 @@
+import type { GoalPriority, SavingGoalHealthStatus } from "@/types/saving-goals";
 import type { ExpenseCategorySlug } from "@/lib/categories/catalog";
 import type { DailyBudgetResult } from "@/lib/budget/daily-budget";
 import type { PiggyBankSummary } from "@/types/piggy-bank";
@@ -12,10 +13,18 @@ export type DashboardTopCategory = {
 };
 
 export type DashboardGoal = {
+  id: string;
   title: string;
-  progress: number;
-  helper: string;
+  priority: GoalPriority;
+  progressPercentage: number;
+  savedAmount: string;
+  targetAmount: string;
+  remainingAmount: string;
   protectedAmount: string;
+  contributionNeeded: string;
+  timelineLabel: string;
+  targetDateLabel?: string | null;
+  status: SavingGoalHealthStatus;
   healthLabel: string;
 };
 

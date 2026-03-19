@@ -57,6 +57,21 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
         body: JSON.stringify(values)
       })
   });
+  const addGoalContributionMutation = useMutation({
+    mutationFn: async ({
+      goalId,
+      values
+    }: {
+      goalId: string;
+      values: { amount: string; note: string };
+    }) =>
+      fetchJson(`/api/saving-goals/${goalId}/contributions`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values)
+      })
+  });
 
   if (dashboardQuery.error instanceof Error) {
     return (
@@ -77,10 +92,26 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
     });
   }
 
+  async function syncSavingGoalsDomains() {
+    await invalidateDomainQueries(queryClient, "saving-goals");
+
+    publishSyncEvent({
+      id: crypto.randomUUID(),
+      domain: "saving-goals",
+      sourceId: syncSourceId,
+      timestamp: Date.now()
+    });
+  }
+
   return (
     <div className="space-y-6 pb-24 sm:space-y-7">
       <section>
-        <DailyBudgetCard result={data.dailyBudget} totalWealth={data.totalWealthLabel} />
+        <DailyBudgetCard
+          result={data.dailyBudget}
+          totalWealth={data.totalWealthLabel}
+          incomeLabel={data.incomeLabel}
+          expensesLabel={data.expensesLabel}
+        />
       </section>
 
       <section className="space-y-4">
@@ -109,7 +140,32 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
             }
           }}
         />
-        <SavingGoalsStatusCard goals={data.goals.slice(0, 2)} />
+        <SavingGoalsStatusCard
+          goals={data.goals.slice(0, 2)}
+          submittingGoalId={
+            addGoalContributionMutation.isPending
+              ? addGoalContributionMutation.variables?.goalId ?? null
+              : null
+          }
+          onAddContribution={async (goalId, values) => {
+            try {
+              await addGoalContributionMutation.mutateAsync({ goalId, values });
+              await syncSavingGoalsDomains();
+              return {
+                success: true,
+                message: "Contributo aggiunto."
+              };
+            } catch (error) {
+              return {
+                success: false,
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Impossibile aggiungere il contributo."
+              };
+            }
+          }}
+        />
         <RecentActivityCard items={data.recentActivity.slice(0, 4)} />
       </section>
     </div>

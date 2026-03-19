@@ -263,20 +263,24 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
       },
       currentDate
     );
-    const helper =
-      metrics.remainingAmount <= 0
-        ? "Goal completato"
-        : `${formatCurrency(metrics.remainingAmount)} mancanti · ${
-            metrics.estimatedReachDate
-              ? `stima ${metrics.estimatedReachDate}`
-              : metrics.reachabilityLabel.toLowerCase()
-          }`;
-
     return {
+      id: goal.id,
       title: goal.title,
-      progress: Math.round(metrics.progressPercentage),
-      helper,
+      priority: goal.priority,
+      progressPercentage: Math.round(metrics.progressPercentage),
+      savedAmount: formatCurrency(goal.savedSoFar),
+      targetAmount: formatCurrency(goal.targetAmount),
+      remainingAmount: formatCurrency(metrics.remainingAmount),
       protectedAmount: formatCurrency(protectedAmount),
+      contributionNeeded: formatCurrency(metrics.monthlyContributionNeeded),
+      timelineLabel:
+        metrics.remainingAmount <= 0
+          ? "Completato"
+          : metrics.estimatedMonthsToReach === null
+            ? "Da stimare"
+            : `${metrics.estimatedMonthsToReach} mesi`,
+      targetDateLabel: metrics.estimatedReachDate,
+      status: metrics.healthStatus,
       healthLabel: metrics.reachabilityLabel
     };
   });
