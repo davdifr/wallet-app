@@ -109,10 +109,6 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
               <h1 className="font-display text-[2.2rem] font-semibold tracking-tight text-foreground">
                 Gruppi
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-                Qui trovi solo l&apos;elenco dei gruppi. Apri un gruppo per gestire spese,
-                partecipanti, saldi e rimborsi nel suo spazio dedicato.
-              </p>
             </div>
           </div>
 

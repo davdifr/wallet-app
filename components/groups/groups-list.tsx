@@ -17,9 +17,6 @@ export function GroupsList({ groups }: GroupsListProps) {
         <CardTitle className="font-display text-[1.75rem] tracking-tight text-foreground">
           I tuoi gruppi
         </CardTitle>
-        <p className="text-sm leading-6 text-muted-foreground">
-          Gli spazi condivisi da controllare al volo, senza inseguire troppe metriche.
-        </p>
       </CardHeader>
 
       <CardContent>
@@ -77,10 +74,11 @@ export function GroupsList({ groups }: GroupsListProps) {
                       </div>
                     </div>
                   </div>
-
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {item.group.description || "Apri il gruppo per vedere spese, saldi e rimborsi."}
-                  </p>
+                  {item.group.description ? (
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                      {item.group.description}
+                    </p>
+                  ) : null}
 
                   <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
                     <div className="inline-flex items-center gap-2 rounded-full bg-background px-3 py-2">

@@ -47,14 +47,9 @@ export function TransactionsList({
   return (
     <Card>
       <CardHeader className="space-y-4">
-        <div className="space-y-2">
-          <CardTitle className="font-display text-[1.75rem] tracking-tight text-foreground">
-            Movimenti
-          </CardTitle>
-          <p className="text-sm leading-6 text-muted-foreground">
-            Scorri, filtra e ritrova in fretta le operazioni che contano davvero.
-          </p>
-        </div>
+        <CardTitle className="font-display text-[1.75rem] tracking-tight text-foreground">
+          Movimenti
+        </CardTitle>
         <TransactionFilters
           availableMonths={availableMonths}
           categories={categories}

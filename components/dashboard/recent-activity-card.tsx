@@ -17,7 +17,6 @@ export function RecentActivityCard({ items }: RecentActivityCardProps) {
   return (
     <DashboardShellCard
       title="Ultimi movimenti"
-      subtitle="Le variazioni che meritano uno sguardo rapido"
       contentClassName="space-y-3"
     >
       {items.length === 0 ? (

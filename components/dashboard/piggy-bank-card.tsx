@@ -291,7 +291,6 @@ export function PiggyBankCard({
     <>
       <DashboardShellCard
         title="Salvadanaio"
-        subtitle="Protetto e richiamabile quando serve"
         action={
           <button
             type="button"

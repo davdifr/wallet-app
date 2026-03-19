@@ -21,19 +21,16 @@ function formatCurrency(value: number) {
 const statusCopy = {
   in_linea: {
     label: "In linea",
-    description: "Hai margine per chiudere il mese senza comprimere riserva e obiettivi.",
     className: "bg-[#7DF4C2]/12 text-[#D7FFF0]",
     icon: CheckCircle2
   },
   attenzione: {
     label: "Attenzione",
-    description: "Il margine di oggi si e assottigliato e va gestito con un po' piu di disciplina.",
     className: "bg-[#FFD166]/12 text-[#FFE7A3]",
     icon: AlertTriangle
   },
   fuori_budget: {
     label: "Oltre margine",
-    description: "Con il ritmo attuale il mese non copre piu le protezioni minime.",
     className: "bg-[#FF92B1]/12 text-[#FFD6E2]",
     icon: AlertTriangle
   }
@@ -92,7 +89,6 @@ export function DailyBudgetCard({
           <CardTitle className="max-w-[11ch] font-display text-[3rem] leading-[0.92] tracking-[-0.055em] text-white sm:text-[3.7rem]">
             {formatCurrency(result.dailyBudget)}
           </CardTitle>
-          <p className="max-w-md text-sm leading-6 text-slate-400">{status.description}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -127,8 +123,7 @@ export function DailyBudgetCard({
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Andamento</p>
-              <p className="mt-1 text-sm text-slate-300">{buildNote(result)}</p>
+              <p className="text-sm text-slate-300">{buildNote(result)}</p>
             </div>
           </div>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/8">

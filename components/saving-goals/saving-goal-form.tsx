@@ -133,23 +133,6 @@ export function SavingGoalForm({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="targetDate">Data desiderata</Label>
-        <Input
-          id="targetDate"
-          name="targetDate"
-          type="date"
-          value={values.targetDate}
-          onChange={(event) =>
-            setValues((current) => ({ ...current, targetDate: event.target.value }))
-          }
-        />
-        <FieldError errors={state.errors?.targetDate} />
-        <p className="text-xs text-muted-foreground">
-          Se la lasci vuota, il sistema stima il tempo al traguardo.
-        </p>
-      </div>
-
       <div
         className={cn(
           "rounded-2xl border px-4 py-3 text-sm",

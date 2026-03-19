@@ -220,9 +220,6 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
             <h1 className="font-display text-[2.3rem] font-semibold tracking-tight text-foreground">
               Goals
             </h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Scegli dove mettere il prossimo contributo e tieni sotto controllo ciò che sta rallentando.
-            </p>
           </div>
 
           <Button type="button" className="w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
@@ -283,7 +280,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
         title="Nuovo goal"
-        description="Imposta target e priorità. La data desiderata resta opzionale."
+        description="Imposta target e priorita del tuo nuovo goal."
       >
         <SavingGoalForm isSubmitting={createGoalMutation.isPending} onSubmit={handleCreateGoal} />
       </Modal>

@@ -230,10 +230,6 @@ export function RecurringIncomesWorkspace({
             <h1 className="font-display text-[2.2rem] font-semibold tracking-tight text-foreground">
               Entrate ricorrenti
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Crea entrate settimanali, mensili o annuali e materializza le occorrenze
-              mancanti nelle transazioni senza duplicati.
-            </p>
           </div>
         </div>
 

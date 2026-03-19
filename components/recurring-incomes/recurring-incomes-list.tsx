@@ -35,9 +35,6 @@ export function RecurringIncomesList({
         <CardTitle className="font-display text-[1.75rem] tracking-tight text-foreground">
           Ricorrenze attive e archiviate
         </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Le occorrenze vengono trasformate in `transactions` di tipo income.
-        </p>
       </CardHeader>
 
       <CardContent>

@@ -195,10 +195,6 @@ export function TransactionsWorkspace({
             <h1 className="font-display text-[2.2rem] font-semibold tracking-tight text-foreground">
               Entrate e spese
             </h1>
-            <p className="mt-2 max-w-3xl text-sm text-muted-foreground sm:text-base">
-              Gestisci le transazioni del wallet con aggiornamenti immediati, filtri fluidi
-              e sincronizzazione in background.
-            </p>
           </div>
 
           <Button

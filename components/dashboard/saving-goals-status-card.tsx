@@ -53,7 +53,6 @@ export function SavingGoalsStatusCard({
   return (
     <DashboardShellCard
       title="Goal"
-      subtitle="Quelli che meritano una decisione adesso"
       action={<Target className="mt-1 h-4 w-4 text-slate-500" />}
       contentClassName="space-y-3"
     >
