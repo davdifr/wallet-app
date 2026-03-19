@@ -146,7 +146,7 @@ export function SavingGoalForm({
         />
         <FieldError errors={state.errors?.targetDate} />
         <p className="text-xs text-muted-foreground">
-          Facoltativa. Se la lasci vuota, il sistema stima il tempo al traguardo.
+          Se la lasci vuota, il sistema stima il tempo al traguardo.
         </p>
       </div>
 
@@ -164,7 +164,7 @@ export function SavingGoalForm({
       </div>
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Creazione in corso..." : "Crea obiettivo"}
+        {isSubmitting ? "Creazione in corso..." : "Crea goal"}
       </Button>
     </form>
   );

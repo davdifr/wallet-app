@@ -172,12 +172,14 @@ export function GroupDetailWorkspace({
       setGroupUnreadFlag(true);
     }
   });
+  const isMarkViewedPending = markViewedMutation.isPending;
+  const markGroupViewed = markViewedMutation.mutate;
 
   useEffect(() => {
-    if (!group.group.hasUnreadExpenses && hasAttemptedMarkViewed && !markViewedMutation.isPending) {
+    if (!group.group.hasUnreadExpenses && hasAttemptedMarkViewed && !isMarkViewedPending) {
       setHasAttemptedMarkViewed(false);
     }
-  }, [group.group.hasUnreadExpenses, hasAttemptedMarkViewed, markViewedMutation.isPending]);
+  }, [group.group.hasUnreadExpenses, hasAttemptedMarkViewed, isMarkViewedPending]);
 
   async function syncGroupsDomain() {
     await invalidateDomainQueries(queryClient, "groups");
@@ -195,21 +197,20 @@ export function GroupDetailWorkspace({
     if (
       !currentUserId ||
       !group.group.hasUnreadExpenses ||
-      markViewedMutation.isPending ||
+      isMarkViewedPending ||
       hasAttemptedMarkViewed
     ) {
       return;
     }
 
     setHasAttemptedMarkViewed(true);
-    markViewedMutation.mutate();
+    markGroupViewed();
   }, [
     currentUserId,
     group.group.hasUnreadExpenses,
     hasAttemptedMarkViewed,
-    markViewedMutation.isPending,
-    initialGroup.group.id,
-    syncSourceId
+    isMarkViewedPending,
+    markGroupViewed
   ]);
 
   async function handleAddMember(values: AddGroupMemberFormValues): Promise<GroupFormState> {

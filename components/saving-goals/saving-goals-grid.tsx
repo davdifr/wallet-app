@@ -21,12 +21,12 @@ export function SavingGoalsGrid({
 }: SavingGoalsGridProps) {
   if (goals.length === 0) {
     return (
-      <div className="rounded-[1.5rem] border border-dashed border-white/8 px-6 py-12 text-center">
+      <div className="rounded-[1.3rem] bg-card px-6 py-12 text-center shadow-card">
         <h3 className="font-display text-xl font-semibold text-foreground">
-          Nessun saving goal configurato
+          Nessun goal in questa vista
         </h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Crea il primo goal per iniziare a misurare progressi e contributi.
+          Cambia filtro oppure crea un nuovo obiettivo.
         </p>
       </div>
     );

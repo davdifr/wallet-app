@@ -32,7 +32,7 @@ export function GoalContributionForm({
 
   return (
     <form
-      className="space-y-3 rounded-3xl border border-input bg-card p-4"
+      className="space-y-3 rounded-[1.2rem] bg-card p-4"
       onSubmit={async (event) => {
         event.preventDefault();
 
@@ -65,7 +65,7 @@ export function GoalContributionForm({
           type="number"
           min="0.01"
           step="0.01"
-          placeholder="Importo"
+          placeholder="0,00"
           value={values.amount}
           onChange={(event) =>
             setValues((current) => ({ ...current, amount: event.target.value }))
@@ -75,7 +75,7 @@ export function GoalContributionForm({
           name="note"
           rows={1}
           className="min-h-11 resize-none py-3"
-          placeholder="Nota opzionale sul contributo"
+          placeholder="Nota facoltativa"
           value={values.note}
           onChange={(event) =>
             setValues((current) => ({ ...current, note: event.target.value }))
@@ -97,7 +97,7 @@ export function GoalContributionForm({
       </div>
 
       <Button type="submit" size="sm" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Aggiunta..." : "Aggiungi contributo"}
+        {isSubmitting ? "Aggiunta..." : "Conferma contributo"}
       </Button>
     </form>
   );

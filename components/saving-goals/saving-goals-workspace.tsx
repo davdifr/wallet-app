@@ -3,19 +3,21 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Plus, Target } from "lucide-react";
 
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { SavingGoalsGrid } from "@/components/saving-goals/saving-goals-grid";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
+import { NoticeCard } from "@/components/ui/notice-card";
 import { fetchJson } from "@/lib/query/fetch-json";
 import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import { queryKeys } from "@/lib/query/query-keys";
 import { publishSyncEvent } from "@/lib/query/sync-events";
+import { calculateSavingGoalMetrics } from "@/lib/saving-goals/calculations";
 import { sortSavingGoals } from "@/lib/saving-goals/sorting";
+import { cn } from "@/lib/utils";
 import type {
   GoalContributionFormState,
   SavingGoal,
@@ -31,8 +33,17 @@ type SavingGoalsWorkspaceProps = {
   initialGoals: SavingGoal[];
 };
 
+type GoalViewFilter = "all" | "active" | "attention" | "completed";
+
 function sortGoals(items: SavingGoal[]) {
   return sortSavingGoals(items);
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR"
+  }).format(value);
 }
 
 export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps) {
@@ -42,6 +53,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
   const [pageMessage, setPageMessage] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<SavingGoal | null>(null);
+  const [activeFilter, setActiveFilter] = useState<GoalViewFilter>("active");
   const queryClient = useQueryClient();
   const syncSourceId = useSyncSourceId();
   const initialData = useMemo(() => ({ goals: sortGoals(initialGoals) }), [initialGoals]);
@@ -86,6 +98,42 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
   });
 
   const goals = sortGoals(savingGoalsQuery.data?.goals ?? initialData.goals);
+  const goalSnapshots = useMemo(
+    () =>
+      goals.map((goal) => ({
+        goal,
+        metrics: calculateSavingGoalMetrics(goal)
+      })),
+    [goals]
+  );
+  const focusGoal =
+    goalSnapshots.find(({ metrics }) => metrics.healthStatus !== "completato")?.goal ??
+    goalSnapshots[0]?.goal ??
+    null;
+  const focusMetrics = focusGoal ? calculateSavingGoalMetrics(focusGoal) : null;
+  const totalSaved = goalSnapshots.reduce((sum, item) => sum + item.goal.savedSoFar, 0);
+  const totalRemaining = goalSnapshots.reduce((sum, item) => sum + item.metrics.remainingAmount, 0);
+  const attentionCount = goalSnapshots.filter(
+    ({ metrics }) => metrics.healthStatus === "lento" || metrics.healthStatus === "bloccato"
+  ).length;
+  const onTrackCount = goalSnapshots.filter(
+    ({ metrics }) => metrics.healthStatus === "in_linea" || metrics.healthStatus === "completato"
+  ).length;
+  const visibleGoals = goalSnapshots
+    .filter(({ metrics }) => {
+      if (activeFilter === "all") {
+        return true;
+      }
+      if (activeFilter === "completed") {
+        return metrics.healthStatus === "completato";
+      }
+      if (activeFilter === "attention") {
+        return metrics.healthStatus === "lento" || metrics.healthStatus === "bloccato";
+      }
+
+      return metrics.healthStatus !== "completato";
+    })
+    .map(({ goal }) => goal);
 
   async function syncSavingGoalsDomain() {
     await invalidateDomainQueries(queryClient, "saving-goals");
@@ -190,20 +238,14 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
   return (
     <div className="space-y-7">
       <section className="space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Badge variant="secondary" className="w-fit">
-              Obiettivi attivi
-            </Badge>
-            <div className="mt-3">
-              <h1 className="font-display text-[2.2rem] font-semibold tracking-tight text-foreground">
-                Obiettivi di risparmio
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-                Crea obiettivi con target e priorita, monitora il progresso e registra
-                contributi manuali. La previsione usa la media degli ultimi 3 mesi.
-              </p>
-            </div>
+            <h1 className="font-display text-[2.3rem] font-semibold tracking-tight text-foreground">
+              Goals
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              Vedi subito dove sei in linea, cosa sta rallentando e dove conviene mettere il prossimo contributo.
+            </p>
           </div>
 
           <Button type="button" className="w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
@@ -213,62 +255,149 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
         </div>
       </section>
 
-      {pageError ? (
-        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
-          {pageError}
-        </div>
-      ) : null}
+      {pageError ? <NoticeCard title="Operazione non completata" message={pageError} /> : null}
 
       {savingGoalsQuery.error instanceof Error ? (
-        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
-          {savingGoalsQuery.error.message}
-        </div>
+        <NoticeCard title="Goals non disponibili" message={savingGoalsQuery.error.message} />
       ) : null}
 
-      {pageMessage ? (
-        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
-          {pageMessage}
-        </div>
-      ) : null}
+      {pageMessage ? <NoticeCard title="Aggiornamento eseguito" message={pageMessage} /> : null}
 
-      <section>
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary text-foreground">
-                <Sparkles className="h-5 w-5" />
-              </div>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-[1.35rem] bg-card p-4 shadow-card">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Accantonato</p>
+          <p className="mt-3 font-display text-[1.9rem] font-semibold tracking-tight text-foreground">
+            {formatCurrency(totalSaved)}
+          </p>
+        </div>
+        <div className="rounded-[1.35rem] bg-card p-4 shadow-card">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Da raggiungere</p>
+          <p className="mt-3 font-display text-[1.9rem] font-semibold tracking-tight text-[#FF92B1]">
+            {formatCurrency(totalRemaining)}
+          </p>
+        </div>
+        <div className="rounded-[1.35rem] bg-card p-4 shadow-card">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">In linea</p>
+          <p className="mt-3 font-display text-[1.9rem] font-semibold tracking-tight text-[#7DF4C2]">
+            {onTrackCount}
+          </p>
+        </div>
+        <div className="rounded-[1.35rem] bg-card p-4 shadow-card">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Da spingere</p>
+          <p className="mt-3 font-display text-[1.9rem] font-semibold tracking-tight text-[#FFD166]">
+            {attentionCount}
+          </p>
+        </div>
+      </section>
+
+      {focusGoal ? (
+        <section className="rounded-[1.5rem] bg-card p-5 shadow-card">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-3">
+              <Badge variant="secondary" className="w-fit">
+                Focus del mese
+              </Badge>
               <div>
-                <CardTitle className="font-display text-[1.75rem] tracking-tight text-foreground">
-                  Goal dettagliati
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Ogni card mostra progresso, ritmo storico, protezione teorica e stima.
+                <h2 className="font-display text-[1.9rem] font-semibold tracking-tight text-foreground">
+                  {focusGoal.title}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Il goal più rilevante da monitorare adesso, in base a priorità e distanza dal traguardo.
                 </p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <SavingGoalsGrid
-              goals={goals}
-              submittingGoalId={submittingContributionGoalId}
-              deletingGoalId={deletingGoalId}
-              onAddContribution={handleAddContribution}
-              onDelete={(goal) => {
-                setPageError(null);
-                setPageMessage(null);
-                setGoalToDelete(goal);
-              }}
-            />
-          </CardContent>
-        </Card>
+
+            <Button type="button" className="w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Nuovo goal
+            </Button>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-[1.2rem] bg-secondary p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Target className="h-4 w-4" />
+                <span className="text-[10px] uppercase tracking-[0.14em]">Progresso</span>
+              </div>
+              <p className="mt-3 text-xl font-semibold text-foreground">
+                {Math.round(focusMetrics?.progressPercentage ?? 0)}%
+              </p>
+            </div>
+            <div className="rounded-[1.2rem] bg-secondary p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-[10px] uppercase tracking-[0.14em]">Manca</span>
+              </div>
+              <p className="mt-3 text-xl font-semibold text-[#FF92B1]">
+                {formatCurrency(focusMetrics?.remainingAmount ?? 0)}
+              </p>
+            </div>
+            <div className="rounded-[1.2rem] bg-secondary p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-[10px] uppercase tracking-[0.14em]">Serve al mese</span>
+              </div>
+              <p className="mt-3 text-xl font-semibold text-[#7DF4C2]">
+                {formatCurrency(focusMetrics?.monthlyContributionNeeded ?? 0)}
+              </p>
+            </div>
+            <div className="rounded-[1.2rem] bg-secondary p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Target className="h-4 w-4" />
+                <span className="text-[10px] uppercase tracking-[0.14em]">Tempo stimato</span>
+              </div>
+              <p className="mt-3 text-xl font-semibold text-foreground">
+                {focusMetrics?.estimatedMonthsToReach === null
+                  ? "Da stimare"
+                  : `${focusMetrics?.estimatedMonthsToReach} mesi`}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          {([
+            ["active", "Da finanziare"],
+            ["attention", "Da spingere"],
+            ["completed", "Completati"],
+            ["all", "Tutti"]
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={cn(
+                "min-h-11 rounded-full px-4 text-sm font-medium transition",
+                activeFilter === value
+                  ? "bg-primary text-primary-foreground shadow-card"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setActiveFilter(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <SavingGoalsGrid
+          goals={visibleGoals}
+          submittingGoalId={submittingContributionGoalId}
+          deletingGoalId={deletingGoalId}
+          onAddContribution={handleAddContribution}
+          onDelete={(goal) => {
+            setPageError(null);
+            setPageMessage(null);
+            setGoalToDelete(goal);
+          }}
+        />
       </section>
 
       <Modal
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
-        title="Nuovo saving goal"
-        description="Definisci target, priorita e una nota facoltativa. La data desiderata resta opzionale."
+        title="Nuovo goal"
+        description="Imposta target e priorità. La data desiderata resta opzionale."
       >
         <SavingGoalForm isSubmitting={createGoalMutation.isPending} onSubmit={handleCreateGoal} />
       </Modal>
