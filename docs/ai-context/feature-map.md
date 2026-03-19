@@ -140,6 +140,7 @@
 
 - Creazione di un goal con titolo, target, priorita e descrizione opzionale.
 - Elenco goal con card dettagliate.
+- Filtro rapido `Mostra` con viste `Da finanziare`, `Completati` e `Tutti`, allineato al pattern usato in `Transactions`.
 - Aggiunta di contributi manuali.
 - Eliminazione goal.
 - Aggiornamento automatico di `saved_so_far`.

@@ -70,6 +70,7 @@ I workspace sono:
 - la dashboard deve restare focalizzata su `quanto puoi spendere oggi`;
 - i form lunghi o multi-step non dovrebbero vivere inline nella dashboard;
 - per azioni puntuali si preferiscono modali coerenti con il resto dell'app;
+- i filtri segmentati per le liste dovrebbero riusare lo stesso pattern visivo gia presente in `Transactions`;
 - la shell deve restare sicura in PWA iPhone standalone, senza rompere safe area, header e bottom nav.
 
 ## Layer servizi

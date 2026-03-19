@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
+import { GoalFilters, type GoalViewFilter } from "@/components/saving-goals/goal-filters";
 import { SavingGoalsGrid } from "@/components/saving-goals/saving-goals-grid";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -16,7 +17,6 @@ import { queryKeys } from "@/lib/query/query-keys";
 import { calculateSavingGoalMetrics } from "@/lib/saving-goals/calculations";
 import { publishSyncEvent } from "@/lib/query/sync-events";
 import { sortSavingGoals } from "@/lib/saving-goals/sorting";
-import { cn } from "@/lib/utils";
 import type {
   GoalContributionFormState,
   SavingGoal,
@@ -31,8 +31,6 @@ const SavingGoalForm = dynamic(
 type SavingGoalsWorkspaceProps = {
   initialGoals: SavingGoal[];
 };
-
-type GoalViewFilter = "all" | "active" | "completed";
 
 function sortGoals(items: SavingGoal[]) {
   return sortSavingGoals(items);
@@ -234,29 +232,7 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
       {pageMessage ? <NoticeCard title="Aggiornamento eseguito" message={pageMessage} /> : null}
 
       <section className="space-y-4">
-        <div className="-mx-1 pb-1">
-          <div className="flex min-w-full justify-center gap-2 px-1">
-            {([
-              ["active", "Da finanziare"],
-              ["completed", "Completati"],
-              ["all", "Tutti"]
-            ] as const).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                className={cn(
-                  "min-h-11 shrink-0 rounded-full px-4 text-sm font-medium transition",
-                  activeFilter === value
-                    ? "bg-primary text-primary-foreground shadow-card"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveFilter(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <GoalFilters activeFilter={activeFilter} onChange={setActiveFilter} />
 
         <SavingGoalsGrid
           goals={visibleGoals}
