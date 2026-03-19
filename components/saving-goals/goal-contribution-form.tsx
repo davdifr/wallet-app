@@ -32,7 +32,7 @@ export function GoalContributionForm({
 
   return (
     <form
-      className="space-y-3 rounded-3xl border border-slate-200 bg-slate-50/80 p-4"
+      className="space-y-3 rounded-3xl border border-input bg-card p-4"
       onSubmit={async (event) => {
         event.preventDefault();
 
@@ -87,9 +87,9 @@ export function GoalContributionForm({
         className={cn(
           "rounded-2xl border px-3 py-2 text-xs",
           state.success
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            ? "border-input bg-muted text-foreground"
             : state.message
-              ? "border-red-200 bg-red-50 text-red-700"
+              ? "border-input bg-muted text-foreground"
               : "hidden"
         )}
       >

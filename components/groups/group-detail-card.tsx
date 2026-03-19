@@ -119,23 +119,23 @@ export function GroupDetailCard({
 
   return (
     <>
-      <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
+      <Card>
         <CardHeader className="space-y-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="bg-white text-slate-700">
+                <Badge variant="secondary">
                   {group.group.members.length} membri
                 </Badge>
-                <Badge variant="secondary" className="bg-white text-slate-700">
+                <Badge variant="secondary">
                   {group.expenses.length} spese
                 </Badge>
               </div>
               <div>
-                <CardTitle className="font-display text-3xl text-slate-950">
+                <CardTitle className="font-display text-3xl text-foreground">
                   {group.group.name}
                 </CardTitle>
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-muted-foreground">
                   {group.group.description || "Nessuna descrizione disponibile."}
                 </p>
               </div>
@@ -146,7 +146,6 @@ export function GroupDetailCard({
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                   disabled={pendingDeleteGroupId === group.group.id}
                   onClick={() => setIsDeleteModalOpen(true)}
                 >
@@ -169,7 +168,7 @@ export function GroupDetailCard({
             {group.group.members.map((member) => (
               <span
                 key={member.id}
-                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600"
+                className="rounded-full border border-input bg-card px-3 py-1 text-xs text-muted-foreground"
               >
                 {member.displayName}
                 {member.isGuest ? " · guest" : ""}
@@ -182,12 +181,12 @@ export function GroupDetailCard({
           <GroupSummary summary={group.summary} />
 
           {group.settlements.some((settlement) => settlement.status === "pending") ? (
-            <div className="space-y-3 rounded-3xl border border-amber-200 bg-amber-50/70 p-5">
+            <div className="space-y-3 rounded-3xl border border-input bg-card p-5">
               <div>
-                <h4 className="font-display text-xl font-semibold text-slate-950">
+                <h4 className="font-display text-xl font-semibold text-foreground">
                   Rimborsi in attesa
                 </h4>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-muted-foreground">
                   I rimborsi segnati da terzi restano fuori dai resoconti globali finche uno
                   degli utenti coinvolti non li accetta.
                 </p>
@@ -211,17 +210,17 @@ export function GroupDetailCard({
                     return (
                       <div
                         key={settlement.id}
-                        className="grid gap-3 rounded-2xl border border-amber-200 bg-white/90 p-4 lg:grid-cols-[1fr_auto]"
+                        className="grid gap-3 rounded-2xl border border-input bg-background p-4 lg:grid-cols-[1fr_auto]"
                       >
                         <div className="space-y-1">
-                          <p className="text-sm font-medium text-slate-900">
+                          <p className="text-sm font-medium text-foreground">
                             {payer?.displayName ?? "Membro"} deve a {payee?.displayName ?? "Membro"}
                           </p>
-                          <p className="text-sm text-slate-600">
+                          <p className="text-sm text-muted-foreground">
                             {formatCurrency(settlement.amount)} · {settlement.settlementDate}
                           </p>
                           {settlement.note ? (
-                            <p className="text-xs text-slate-500">{settlement.note}</p>
+                            <p className="text-xs text-muted-foreground">{settlement.note}</p>
                           ) : null}
                         </div>
 
@@ -232,7 +231,7 @@ export function GroupDetailCard({
                             onSubmit={onAcceptSettlement}
                           />
                         ) : (
-                          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                          <div className="rounded-2xl border border-input bg-card px-4 py-3 text-sm text-muted-foreground">
                             In attesa di conferma da parte di uno degli utenti coinvolti
                           </div>
                         )}
@@ -245,42 +244,42 @@ export function GroupDetailCard({
 
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-slate-950 p-2 text-white">
+              <div className="rounded-2xl border border-input p-2 text-foreground">
                 <ReceiptText className="h-4 w-4" />
               </div>
               <div>
-                <h4 className="font-display text-xl font-semibold text-slate-950">
+                <h4 className="font-display text-xl font-semibold text-foreground">
                   Spese condivise
                 </h4>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   Tutte le quote del gruppo, con rimborsi e stato dei saldi.
                 </p>
               </div>
             </div>
 
             {group.expenses.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-10 text-center text-sm text-slate-500">
+              <div className="rounded-3xl border border-dashed border-input px-6 py-10 text-center text-sm text-muted-foreground">
                 Nessuna spesa ancora registrata per questo gruppo.
               </div>
             ) : (
               group.expenses.map((expense) => (
                 <article
                   key={expense.id}
-                  className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5"
+                  className="rounded-3xl border border-input bg-card p-5"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <h5 className="text-lg font-semibold text-slate-950">{expense.title}</h5>
-                      <p className="mt-1 text-sm text-slate-500">
+                      <h5 className="text-lg font-semibold text-foreground">{expense.title}</h5>
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {expense.description} · pagata da{" "}
                         {expense.paidByMember?.displayName ?? "Membro"} · {expense.expenseDate}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-display text-2xl font-semibold text-slate-950">
+                      <p className="font-display text-2xl font-semibold text-foreground">
                         {formatCurrency(expense.amount)}
                       </p>
-                      <p className="text-xs text-slate-500">{expense.splitMethod}</p>
+                      <p className="text-xs text-muted-foreground">{expense.splitMethod}</p>
                     </div>
                   </div>
 
@@ -296,13 +295,13 @@ export function GroupDetailCard({
                       return (
                         <div
                           key={split.id}
-                          className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 lg:grid-cols-[1fr_auto]"
+                          className="grid gap-3 rounded-2xl border border-input bg-background p-4 lg:grid-cols-[1fr_auto]"
                         >
                           <div>
-                            <p className="font-medium text-slate-900">
+                            <p className="font-medium text-foreground">
                               {split.member?.displayName ?? "Membro"}
                             </p>
-                            <p className="mt-1 text-sm text-slate-500">
+                            <p className="mt-1 text-sm text-muted-foreground">
                               Quota {formatCurrency(split.amount)} · saldato{" "}
                               {formatCurrency(split.settledAmount)} · residuo{" "}
                               {formatCurrency(remainingAmount)}
@@ -312,7 +311,7 @@ export function GroupDetailCard({
                                 {pendingSplitSettlements.map((settlement) => (
                                   <p
                                     key={settlement.id}
-                                    className="text-xs font-medium text-amber-700"
+                                    className="text-xs font-medium text-muted-foreground"
                                   >
                                     Rimborso in attesa: {formatCurrency(settlement.amount)}
                                   </p>
@@ -338,8 +337,8 @@ export function GroupDetailCard({
                             <div
                               className={
                                 pendingSplitSettlements.length > 0
-                                  ? "rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-                                  : "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+                                  ? "rounded-2xl border border-input bg-card px-4 py-3 text-sm text-muted-foreground"
+                                  : "rounded-2xl border border-input bg-card px-4 py-3 text-sm text-muted-foreground"
                               }
                             >
                               {expense.paidByMemberId === split.groupMemberId
@@ -398,8 +397,8 @@ export function GroupDetailCard({
         description="Il gruppo verra eliminato solo se non contiene spese, rimborsi o transazioni collegate."
       >
         <div className="space-y-5">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm text-slate-600">
-            <p className="font-medium text-slate-900">{group.group.name}</p>
+          <div className="rounded-3xl border border-input bg-card px-5 py-4 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">{group.group.name}</p>
             <p className="mt-1">
               Membri {group.group.members.length} · spese {group.expenses.length} · rimborsi{" "}
               {group.settlements.length}
@@ -417,7 +416,6 @@ export function GroupDetailCard({
             </Button>
             <Button
               type="button"
-              className="bg-rose-600 text-white hover:bg-rose-700"
               onClick={() => void handleDeleteGroup()}
               disabled={pendingDeleteGroupId === group.group.id}
             >

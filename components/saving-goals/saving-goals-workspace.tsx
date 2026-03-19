@@ -188,18 +188,18 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <section className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Badge variant="secondary" className="w-fit bg-white/80 text-slate-700">
-              Saving Goals
+            <Badge variant="secondary" className="w-fit">
+              Obiettivi attivi
             </Badge>
             <div className="mt-3">
-              <h1 className="font-display text-3xl font-semibold text-slate-950">
+              <h1 className="font-display text-[2.2rem] font-semibold tracking-tight text-foreground">
                 Obiettivi di risparmio
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
                 Crea obiettivi con target e priorita, monitora il progresso e registra
                 contributi manuali. La previsione usa la media degli ultimi 3 mesi.
               </p>
@@ -214,35 +214,35 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
       </section>
 
       {pageError ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {pageError}
         </div>
       ) : null}
 
       {savingGoalsQuery.error instanceof Error ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {savingGoalsQuery.error.message}
         </div>
       ) : null}
 
       {pageMessage ? (
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {pageMessage}
         </div>
       ) : null}
 
       <section>
-        <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
+        <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-slate-950 p-2 text-white">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary text-foreground">
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="font-display text-2xl text-slate-950">
+                <CardTitle className="font-display text-[1.75rem] tracking-tight text-foreground">
                   Goal dettagliati
                 </CardTitle>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   Ogni card mostra progresso, ritmo storico, protezione teorica e stima.
                 </p>
               </div>
@@ -285,8 +285,8 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
       >
         {goalToDelete ? (
           <div className="space-y-5">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm text-slate-600">
-              <p className="font-medium text-slate-900">{goalToDelete.title}</p>
+            <div className="rounded-3xl border border-input bg-card px-5 py-4 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">{goalToDelete.title}</p>
               <p className="mt-1">
                 Target {goalToDelete.targetAmount.toLocaleString("it-IT", {
                   style: "currency",
@@ -307,7 +307,6 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
               </Button>
               <Button
                 type="button"
-                className="bg-rose-600 text-white hover:bg-rose-700"
                 onClick={() => void handleDeleteGoal()}
                 disabled={deletingGoalId === goalToDelete.id}
               >

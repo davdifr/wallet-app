@@ -1,6 +1,7 @@
 "use client";
 
 import { getCategoryIcon } from "@/lib/categories/catalog";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import type {
@@ -47,87 +48,102 @@ export function TransactionFilters({
   const SelectedCategoryIcon = selectedCategory
     ? getCategoryIcon(selectedCategory.categorySlug, selectedCategory.type)
     : null;
+  const typeOptions = [
+    { label: "Tutti", value: "all" },
+    { label: "Spese", value: "expense" },
+    { label: "Entrate", value: "income" }
+  ] as const;
 
   return (
-    <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="space-y-4 rounded-[1.2rem] bg-secondary p-4">
       <div className="space-y-2">
-        <Label htmlFor="month">Mese</Label>
-        <Select
-          id="month"
-          name="month"
-          value={filters.month ?? ""}
-          disabled={loading}
-          onChange={(event) =>
-            onApply({
-              ...filters,
-              month: event.target.value || undefined
-            })
-          }
-        >
-          <option value="">Tutti i mesi</option>
-          {availableMonths.map((month) => (
-            <option key={month} value={month}>
-              {formatMonthLabel(month)}
-            </option>
-          ))}
-        </Select>
+        <Label>Mostra</Label>
+        <div className="grid grid-cols-3 gap-2 rounded-[1rem] bg-background p-1">
+          {typeOptions.map((option) => {
+            const active = (filters.type ?? "all") === option.value;
+
+            return (
+              <Button
+                key={option.value}
+                type="button"
+                variant={active ? "default" : "ghost"}
+                className="min-h-10 rounded-[0.85rem] px-3 py-2 text-sm"
+                disabled={loading}
+                onClick={() =>
+                  onApply({
+                    ...filters,
+                    type: option.value
+                  })
+                }
+              >
+                {option.label}
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="category-filter">Categoria</Label>
-        <Select
-          id="category-filter"
-          name="category"
-          value={filters.category ?? ""}
-          disabled={loading}
-          onChange={(event) =>
-            onApply({
-              ...filters,
-              category: event.target.value || undefined
-            })
-          }
-        >
-          <option value="">Tutte</option>
-          {visibleCategories.map((category) => (
-            <option key={category.value} value={category.value}>
-              {category.type === "income" && (!filters.type || filters.type === "all")
-                ? `Entrata · ${category.label}`
-                : category.type === "expense" && (!filters.type || filters.type === "all")
-                  ? `Spesa · ${category.label}`
-                  : category.label}
-            </option>
-          ))}
-        </Select>
-        {selectedCategory && SelectedCategoryIcon ? (
-          <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
-            <SelectedCategoryIcon className="h-3.5 w-3.5" />
-            <span>{selectedCategory.label}</span>
-            {selectedCategory.isLegacy ? (
-              <span className="text-slate-400">storica</span>
-            ) : null}
-          </div>
-        ) : null}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="month">Mese</Label>
+          <Select
+            id="month"
+            name="month"
+            value={filters.month ?? ""}
+            disabled={loading}
+            onChange={(event) =>
+              onApply({
+                ...filters,
+                month: event.target.value || undefined
+              })
+            }
+          >
+            <option value="">Tutti i mesi</option>
+            {availableMonths.map((month) => (
+              <option key={month} value={month}>
+                {formatMonthLabel(month)}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="category-filter">Categoria</Label>
+          <Select
+            id="category-filter"
+            name="category"
+            value={filters.category ?? ""}
+            disabled={loading}
+            onChange={(event) =>
+              onApply({
+                ...filters,
+                category: event.target.value || undefined
+              })
+            }
+          >
+            <option value="">Tutte</option>
+            {visibleCategories.map((category) => (
+              <option key={category.value} value={category.value}>
+                {category.type === "income" && (!filters.type || filters.type === "all")
+                  ? `Entrata · ${category.label}`
+                  : category.type === "expense" && (!filters.type || filters.type === "all")
+                    ? `Spesa · ${category.label}`
+                    : category.label}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="type-filter">Tipo</Label>
-        <Select
-          id="type-filter"
-          name="type"
-          value={filters.type ?? "all"}
-          disabled={loading}
-          onChange={(event) =>
-            onApply({
-              ...filters,
-              type: event.target.value === "all" ? "all" : event.target.value as "expense" | "income"
-            })
-          }
-        >
-          <option value="all">Tutti</option>
-          <option value="expense">Spese</option>
-          <option value="income">Entrate</option>
-        </Select>
-      </div>
+      {selectedCategory && SelectedCategoryIcon ? (
+        <div className="flex min-h-8 items-center gap-2 rounded-full bg-background px-3 py-2 text-xs font-medium text-foreground">
+          <SelectedCategoryIcon className="h-3.5 w-3.5" />
+          <span>{selectedCategory.label}</span>
+          {selectedCategory.isLegacy ? (
+            <span className="text-muted-foreground">storica</span>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

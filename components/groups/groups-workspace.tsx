@@ -98,18 +98,18 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <section className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Badge variant="secondary" className="w-fit bg-white/80 text-slate-700">
-              Group Expenses
+            <Badge variant="secondary" className="w-fit">
+              Gruppi condivisi
             </Badge>
             <div className="mt-3">
-              <h1 className="font-display text-3xl font-semibold text-slate-950">
+              <h1 className="font-display text-[2.2rem] font-semibold tracking-tight text-foreground">
                 Gruppi
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
                 Qui trovi solo l&apos;elenco dei gruppi. Apri un gruppo per gestire spese,
                 partecipanti, saldi e rimborsi nel suo spazio dedicato.
               </p>
@@ -128,19 +128,19 @@ export function GroupsWorkspace({ initialGroups }: GroupsWorkspaceProps) {
       </section>
 
       {pageError ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {pageError}
         </div>
       ) : null}
 
       {groupsQuery.error instanceof Error ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {groupsQuery.error.message}
         </div>
       ) : null}
 
       {pageMessage ? (
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {pageMessage}
         </div>
       ) : null}

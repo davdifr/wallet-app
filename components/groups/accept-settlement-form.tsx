@@ -32,9 +32,9 @@ export function AcceptSettlementForm({
         className={cn(
           "rounded-xl border px-3 py-2 text-xs",
           state.success
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            ? "border-input bg-muted text-foreground"
             : state.message
-              ? "border-red-200 bg-red-50 text-red-700"
+              ? "border-input bg-muted text-foreground"
               : "hidden"
         )}
       >

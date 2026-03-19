@@ -7,7 +7,6 @@ import { DailyBudgetCard } from "@/components/dashboard/daily-budget-card";
 import { PiggyBankCard } from "@/components/dashboard/piggy-bank-card";
 import { RecentActivityCard } from "@/components/dashboard/recent-activity-card";
 import { SavingGoalsStatusCard } from "@/components/dashboard/saving-goals-status-card";
-import { TopCategoriesCard } from "@/components/dashboard/top-categories-card";
 import { useSyncSourceId } from "@/components/providers/dashboard-query-provider";
 import { NoticeCard } from "@/components/ui/notice-card";
 import { fetchJson } from "@/lib/query/fetch-json";
@@ -79,12 +78,12 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
   }
 
   return (
-    <div className="space-y-5 pb-12 sm:space-y-6">
+    <div className="space-y-6 pb-24 sm:space-y-7">
       <section>
         <DailyBudgetCard result={data.dailyBudget} totalWealth={data.totalWealthLabel} />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <section className="space-y-4">
         <PiggyBankCard
           summary={data.piggyBankSummary}
           onSubmitMovement={async (values) => {
@@ -110,12 +109,8 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
             }
           }}
         />
-        <SavingGoalsStatusCard goals={data.goals} />
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <RecentActivityCard items={data.recentActivity} />
-        <TopCategoriesCard categories={data.topCategories} />
+        <SavingGoalsStatusCard goals={data.goals.slice(0, 2)} />
+        <RecentActivityCard items={data.recentActivity.slice(0, 4)} />
       </section>
     </div>
   );

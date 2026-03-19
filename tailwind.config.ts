@@ -21,7 +21,8 @@ const config: Config = {
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)"
+        sm: "calc(var(--radius) - 6px)",
+        xl: "calc(var(--radius) + 8px)"
       },
       colors: {
         background: "hsl(var(--background))",
@@ -47,14 +48,21 @@ const config: Config = {
         display: ["var(--font-space-grotesk)"]
       },
       boxShadow: {
-        soft: "0 20px 45px -25px rgba(15, 23, 42, 0.35)"
+        soft: "0 10px 24px rgba(0, 0, 0, 0.22)",
+        card: "0 2px 12px rgba(0, 0, 0, 0.18)",
+        float: "0 16px 36px rgba(0, 0, 0, 0.28)"
       },
-      backgroundImage: {
-        "hero-grid":
-          "radial-gradient(circle at top, rgba(15, 23, 42, 0.05), transparent 35%), linear-gradient(to right, rgba(148, 163, 184, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.15) 1px, transparent 1px)"
+      spacing: {
+        18: "4.5rem",
+        22: "5.5rem"
       },
-      backgroundSize: {
-        "hero-grid": "auto, 40px 40px, 40px 40px"
+      fontSize: {
+        "xs-ui": ["11px", { lineHeight: "16px", letterSpacing: "0.04em" }],
+        "sm-ui": ["13px", { lineHeight: "18px" }],
+        "md-ui": ["15px", { lineHeight: "22px" }],
+        "lg-ui": ["18px", { lineHeight: "26px" }],
+        "xl-ui": ["24px", { lineHeight: "30px", letterSpacing: "-0.02em" }],
+        "2xl-ui": ["32px", { lineHeight: "36px", letterSpacing: "-0.03em" }]
       }
     }
   },

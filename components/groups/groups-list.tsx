@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ReceiptText, Scale, Users } from "lucide-react";
+import { ArrowRight, ReceiptText, Scale } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { GroupDetails } from "@/types/group-expenses";
@@ -12,85 +12,89 @@ type GroupsListProps = {
 
 export function GroupsList({ groups }: GroupsListProps) {
   return (
-    <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
+    <Card>
       <CardHeader>
-        <CardTitle className="font-display text-2xl text-slate-950">
+        <CardTitle className="font-display text-[1.75rem] tracking-tight text-foreground">
           I tuoi gruppi
         </CardTitle>
-        <p className="text-sm text-slate-500">
-          Apri un gruppo per vedere membri, spese condivise, saldi e rimborsi nel dettaglio.
+        <p className="text-sm leading-6 text-muted-foreground">
+          Gli spazi condivisi da controllare al volo, senza inseguire troppe metriche.
         </p>
       </CardHeader>
 
       <CardContent>
         {groups.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-12 text-center">
-            <h3 className="font-display text-xl font-semibold text-slate-950">
+          <div className="rounded-[1.2rem] bg-secondary px-6 py-12 text-center">
+            <h3 className="font-display text-xl font-semibold text-foreground">
               Nessun gruppo creato
             </h3>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Crea il primo gruppo per iniziare a dividere spese e rimborsi.
             </p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {groups.map((item) => (
-              <Link
-                key={item.group.id}
-                href={`/groups/${item.group.id}`}
-                className="group rounded-[2rem] border border-slate-200 bg-slate-50/80 p-5 transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-display text-xl font-semibold text-slate-950">
-                        {item.group.name}
-                      </p>
-                      {item.group.hasUnreadExpenses ? (
-                        <span className="inline-flex shrink-0 items-center" title="Nuove spese">
-                          <span className="sr-only">Nuove spese non viste</span>
-                          <span
-                            aria-hidden="true"
-                            className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.14)]"
-                          />
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-2 text-sm text-slate-500">
-                      {item.group.description || "Nessuna descrizione disponibile."}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-2 text-slate-500 transition group-hover:border-slate-300 group-hover:text-slate-950">
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
-                </div>
+            {groups.map((item) => {
+              const pendingSettlements = item.settlements.filter(
+                (settlement) => settlement.status === "pending"
+              ).length;
+              const hasOpenBalances = item.summary.debts.length > 0 || pendingSettlements > 0;
 
-                <div className="mt-5 grid grid-cols-2 gap-2 text-xs text-slate-600">
-                  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2">
+              return (
+                <Link
+                  key={item.group.id}
+                  href={`/groups/${item.group.id}`}
+                  className="group rounded-[1.35rem] bg-secondary p-5 transition hover:bg-[hsl(var(--secondary)/0.92)]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-display text-[1.25rem] font-semibold text-foreground">
+                          {item.group.name}
+                        </p>
+                        {item.group.hasUnreadExpenses ? (
+                          <span className="inline-flex shrink-0 items-center" title="Nuove spese">
+                            <span className="sr-only">Nuove spese non viste</span>
+                            <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-[#FF92B1]" />
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {item.group.members.length} membri · {item.expenses.length} spese
+                      </p>
+                    </div>
+
                     <div className="flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5" />
-                      <span>{item.group.members.length} membri</span>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                          hasOpenBalances ? "bg-white/[0.06] text-slate-300" : "bg-[#7DF4C2]/12 text-[#D7FFF0]"
+                        }`}
+                      >
+                        {hasOpenBalances ? "Da regolare" : "Pari"}
+                      </span>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-[1rem] bg-background text-muted-foreground transition">
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <ReceiptText className="h-3.5 w-3.5" />
-                      <span>{item.expenses.length} spese</span>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2">
-                    <div className="flex items-center gap-2">
+
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    {item.group.description || "Apri il gruppo per vedere spese, saldi e rimborsi."}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-background px-3 py-2">
                       <Scale className="h-3.5 w-3.5" />
                       <span>{item.summary.debts.length} debiti aperti</span>
                     </div>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-background px-3 py-2">
+                      <ReceiptText className="h-3.5 w-3.5" />
+                      <span>{pendingSettlements} rimborsi in attesa</span>
+                    </div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2">
-                    {item.settlements.filter((settlement) => settlement.status === "pending").length}{" "}
-                    rimborsi in attesa
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </CardContent>

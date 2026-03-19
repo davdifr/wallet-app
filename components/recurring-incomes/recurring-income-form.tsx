@@ -31,7 +31,7 @@ function FieldError({ errors }: { errors?: string[] }) {
     return null;
   }
 
-  return <p className="text-xs text-red-600">{errors[0]}</p>;
+  return <p className="text-xs text-muted-foreground">{errors[0]}</p>;
 }
 
 type RecurringIncomeFormProps = {
@@ -135,8 +135,8 @@ export function RecurringIncomeForm({
                   }
                   className={
                     isSelected
-                      ? "flex items-center gap-2 rounded-2xl border border-slate-950 bg-slate-950 px-3 py-3 text-left text-white"
-                      : "flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-slate-700"
+                      ? "flex items-center gap-2 rounded-2xl border border-input bg-muted px-3 py-3 text-left text-foreground"
+                      : "flex items-center gap-2 rounded-2xl border border-input bg-background px-3 py-3 text-left text-foreground"
                   }
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -211,9 +211,9 @@ export function RecurringIncomeForm({
         className={cn(
           "rounded-2xl border px-4 py-3 text-sm",
           state.success
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            ? "border-input bg-muted text-foreground"
             : state.message
-              ? "border-red-200 bg-red-50 text-red-700"
+              ? "border-input bg-muted text-foreground"
               : "hidden"
         )}
       >

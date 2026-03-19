@@ -26,29 +26,26 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const message = params.message;
 
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-hero-grid opacity-60" />
+    <section>
       <div className="container flex min-h-screen flex-col justify-center gap-10 py-10 lg:flex-row lg:items-center">
         <div className="max-w-xl space-y-6">
-          <Badge className="bg-white/80 text-slate-700 shadow-soft backdrop-blur">
-            Wallet App
-          </Badge>
+          <Badge>Wallet App</Badge>
           <div className="space-y-4">
-            <h1 className="font-display text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+            <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
               Gestisci il tuo wallet con un dashboard pulito, veloce e sicuro.
             </h1>
-            <p className="max-w-lg text-base text-slate-600 sm:text-lg">
+            <p className="max-w-lg text-base text-muted-foreground sm:text-lg">
               Base full-stack pronta per crescere: Next.js App Router, Supabase,
               route protette e una UI minimal mobile-first.
             </p>
           </div>
-          <div className="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/60 bg-white/75 p-4 shadow-soft backdrop-blur">
-              <ShieldCheck className="mb-3 h-5 w-5 text-primary" />
+          <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
+            <div className="rounded-2xl border border-input bg-card p-4">
+              <ShieldCheck className="mb-3 h-5 w-5 text-muted-foreground" />
               Accesso OAuth con Google e sessione sincronizzata lato server.
             </div>
-            <div className="rounded-2xl border border-white/60 bg-white/75 p-4 shadow-soft backdrop-blur">
-              <Wallet className="mb-3 h-5 w-5 text-accent" />
+            <div className="rounded-2xl border border-input bg-card p-4">
+              <Wallet className="mb-3 h-5 w-5 text-muted-foreground" />
               Architettura divisa per componenti, servizi, hook e types.
             </div>
           </div>
@@ -56,17 +53,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         <AuthCard
           footer={
-            <p className="text-center text-xs text-slate-500">
+            <p className="text-center text-xs text-muted-foreground">
               Continuando accetti il flusso OAuth di Google configurato su
               Supabase.
             </p>
           }
         >
           <div className="space-y-2 text-center">
-            <h2 className="font-display text-2xl font-semibold text-slate-950">
+            <h2 className="font-display text-2xl font-semibold text-foreground">
               Accedi
             </h2>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               Entra nella dashboard e completa il setup del tuo wallet.
             </p>
           </div>
@@ -79,14 +76,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </form>
 
           {message ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-xl border border-input bg-muted px-4 py-3 text-sm text-foreground">
               {message}
             </div>
           ) : null}
 
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-muted-foreground">
             Dopo il login verrai reindirizzato su{" "}
-            <Link href="/dashboard" className="font-medium text-primary">
+            <Link href="/dashboard" className="font-medium text-foreground underline">
               dashboard
             </Link>
             .

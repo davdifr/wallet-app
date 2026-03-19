@@ -13,8 +13,8 @@ export default function Icon() {
       <div
         style={{
           alignItems: "center",
-          background: "linear-gradient(160deg, #020617 0%, #0f172a 100%)",
-          color: "#ffffff",
+          background: "#ffffff",
+          color: "#111111",
           display: "flex",
           fontFamily: "system-ui, sans-serif",
           height: "100%",
@@ -25,7 +25,7 @@ export default function Icon() {
         <div
           style={{
             alignItems: "center",
-            border: "18px solid rgba(255, 255, 255, 0.16)",
+            border: "18px solid #d4d4d8",
             borderRadius: 128,
             display: "flex",
             gap: 24,
@@ -35,7 +35,7 @@ export default function Icon() {
           <div
             style={{
               alignItems: "center",
-              border: "18px solid #ffffff",
+              border: "18px solid #111111",
               borderRadius: 40,
               display: "flex",
               fontSize: 132,
@@ -66,7 +66,7 @@ export default function Icon() {
             </span>
             <span
               style={{
-                color: "rgba(255, 255, 255, 0.75)",
+                color: "#52525b",
                 fontSize: 46,
                 letterSpacing: "0.18em",
                 marginTop: 18,

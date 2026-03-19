@@ -58,7 +58,7 @@ export function GroupMemberForm({
 
   return (
     <form
-      className="space-y-3 rounded-3xl border border-slate-200 bg-slate-50/80 p-4"
+      className="space-y-3 rounded-3xl border border-input bg-card p-4"
       onSubmit={async (event) => {
         event.preventDefault();
 
@@ -117,7 +117,7 @@ export function GroupMemberForm({
           <div className="space-y-2">
             <div className="relative">
               {memberType === "app_user" ? (
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               ) : null}
               <Input
                 id={`email-${groupId}`}
@@ -140,8 +140,8 @@ export function GroupMemberForm({
             </div>
 
             {memberType === "app_user" && suggestedCandidates.length > 0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
-                <p className="px-2 pb-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+              <div className="rounded-2xl border border-input bg-background p-2">
+                <p className="px-2 pb-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
                   Suggerimenti
                 </p>
                 <div className="space-y-1">
@@ -149,7 +149,7 @@ export function GroupMemberForm({
                     <button
                       key={candidate.id}
                       type="button"
-                      className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-slate-50"
+                      className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-muted"
                       onClick={() => {
                         setValues((current) => ({
                           ...current,
@@ -159,14 +159,14 @@ export function GroupMemberForm({
                       }}
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-900">
+                        <p className="truncate text-sm font-medium text-foreground">
                           {candidate.fullName ?? candidate.email}
                         </p>
                         {candidate.fullName ? (
-                          <p className="truncate text-xs text-slate-500">{candidate.email}</p>
+                          <p className="truncate text-xs text-muted-foreground">{candidate.email}</p>
                         ) : null}
                       </div>
-                      <span className="shrink-0 text-xs text-slate-400">Seleziona</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">Seleziona</span>
                     </button>
                   ))}
                 </div>
@@ -191,9 +191,9 @@ export function GroupMemberForm({
         className={cn(
           "rounded-2xl border px-3 py-2 text-xs",
           state.success
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            ? "border-input bg-muted text-foreground"
             : state.message
-              ? "border-red-200 bg-red-50 text-red-700"
+              ? "border-input bg-muted text-foreground"
               : "hidden"
         )}
       >

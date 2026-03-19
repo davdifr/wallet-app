@@ -11,9 +11,9 @@ type MetricCardProps = {
 };
 
 const toneClassName = {
-  neutral: "bg-slate-100 text-slate-700",
-  positive: "bg-emerald-100 text-emerald-700",
-  warning: "bg-amber-100 text-amber-700"
+  neutral: "border border-input text-muted-foreground",
+  positive: "border border-input text-muted-foreground",
+  warning: "border border-input text-muted-foreground"
 } as const;
 
 export function MetricCard({
@@ -33,10 +33,10 @@ export function MetricCard({
       }
       contentClassName="pt-1"
     >
-      <p className="font-display text-3xl font-semibold tracking-tight text-slate-950">
+      <p className="font-display text-3xl font-semibold tracking-tight text-foreground">
         {value}
       </p>
-      <p className="mt-2 text-sm text-slate-500">{helper}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{helper}</p>
     </DashboardShellCard>
   );
 }

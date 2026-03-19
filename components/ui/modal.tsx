@@ -57,7 +57,7 @@ export function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/45 p-3 pt-6 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/55 p-0 sm:items-center sm:p-6"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onOpenChange(false);
@@ -69,30 +69,31 @@ export function Modal({
         aria-modal="true"
         aria-labelledby="modal-title"
         className={cn(
-          "w-full max-w-2xl rounded-[2rem] border border-white/80 bg-white p-6 shadow-soft",
-          "max-h-[90vh] overflow-y-auto",
+          "safe-mobile-sheet ios-scroll w-full max-w-2xl border border-white/6 bg-popover p-5 shadow-float",
+          "overflow-y-auto rounded-t-[2rem] sm:rounded-[2rem] sm:p-6",
           className
         )}
       >
+        <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/10 sm:hidden" />
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h2 id="modal-title" className="font-display text-2xl font-semibold text-slate-950">
+            <h2 id="modal-title" className="font-display text-[1.55rem] font-semibold tracking-tight text-foreground">
               {title}
             </h2>
-            {description ? <p className="text-sm text-slate-500">{description}</p> : null}
+            {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
           </div>
 
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-950"
+            className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-secondary text-muted-foreground transition hover:text-foreground"
             aria-label="Chiudi modale"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-6">{children}</div>
+        <div className="mt-5">{children}</div>
       </div>
     </div>,
     document.body

@@ -21,8 +21,11 @@ export function MobileBottomNav() {
   }
 
   return (
-    <nav className="safe-bottom-nav fixed z-30 rounded-[1.35rem] border border-white/80 bg-white/95 p-1 shadow-soft backdrop-blur lg:hidden">
-      <ul className="grid grid-cols-5 gap-1">
+    <nav
+      className="safe-bottom-nav fixed z-30 rounded-[1.7rem] border border-white/6 bg-[#121927]/95 p-2 shadow-float backdrop-blur-xl lg:hidden"
+      aria-label="Navigazione principale"
+    >
+      <ul className="grid grid-cols-5 gap-1.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActivePath(pathname, item.href);
@@ -36,10 +39,10 @@ export function MobileBottomNav() {
                 onFocus={() => prefetchNavTarget(item.href)}
                 onTouchStart={() => prefetchNavTarget(item.href)}
                 className={cn(
-                  "relative flex min-h-11 flex-col items-center justify-center gap-1 rounded-[1rem] px-1 py-2 text-center text-[10px] font-medium leading-none transition",
+                  "relative flex min-h-[3.5rem] flex-col items-center justify-center gap-1 rounded-[1.1rem] px-1 py-2.5 text-center text-[10px] font-medium leading-none transition",
                   active
-                    ? "bg-slate-950 text-white shadow-sm"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-950"
+                    ? "bg-white/[0.08] text-[#55C7FF]"
+                    : "text-slate-500"
                 )}
                 aria-label={item.label}
               >

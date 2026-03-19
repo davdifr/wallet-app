@@ -220,17 +220,17 @@ export function RecurringIncomesWorkspace({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-3">
-          <Badge variant="secondary" className="w-fit bg-white/80 text-slate-700">
-            Recurring Incomes
+          <Badge variant="secondary" className="w-fit">
+            Entrate automatiche
           </Badge>
           <div>
-            <h1 className="font-display text-3xl font-semibold text-slate-950">
+            <h1 className="font-display text-[2.2rem] font-semibold tracking-tight text-foreground">
               Entrate ricorrenti
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
               Crea entrate settimanali, mensili o annuali e materializza le occorrenze
               mancanti nelle transazioni senza duplicati.
             </p>
@@ -246,19 +246,19 @@ export function RecurringIncomesWorkspace({
       </section>
 
       {pageError ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {pageError}
         </div>
       ) : null}
 
       {recurringIncomesQuery.error instanceof Error ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {recurringIncomesQuery.error.message}
         </div>
       ) : null}
 
       {pageMessage ? (
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {pageMessage}
         </div>
       ) : null}
@@ -303,8 +303,8 @@ export function RecurringIncomesWorkspace({
       >
         {recurringIncomeToDelete ? (
           <div className="space-y-5">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm text-slate-600">
-              <p className="font-medium text-slate-900">
+            <div className="rounded-3xl border border-input bg-card px-5 py-4 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">
                 {recurringIncomeToDelete.category} · {recurringIncomeToDelete.description}
               </p>
               <p className="mt-1">
@@ -324,7 +324,6 @@ export function RecurringIncomesWorkspace({
               </Button>
               <Button
                 type="button"
-                className="bg-rose-600 text-white hover:bg-rose-700"
                 onClick={() => void handleDeleteRecurringIncome()}
                 disabled={deletingId === recurringIncomeToDelete.id}
               >

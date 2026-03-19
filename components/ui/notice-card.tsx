@@ -7,14 +7,14 @@ type NoticeCardProps = {
 
 export function NoticeCard({ title, message }: NoticeCardProps) {
   return (
-    <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+    <div className="rounded-[1.25rem] border border-white/6 bg-card p-4 text-foreground shadow-card">
       <div className="flex items-start gap-3">
-        <div className="rounded-2xl bg-amber-100 p-2 text-amber-700">
+        <div className="flex h-10 w-10 items-center justify-center rounded-[1rem] bg-secondary text-muted-foreground">
           <AlertCircle className="h-4 w-4" />
         </div>
         <div>
-          <p className="font-medium">{title}</p>
-          <p className="mt-1 text-sm text-amber-800">{message}</p>
+          <p className="text-[15px] font-semibold">{title}</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">{message}</p>
         </div>
       </div>
     </div>

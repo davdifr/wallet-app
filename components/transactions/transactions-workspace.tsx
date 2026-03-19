@@ -188,14 +188,14 @@ export function TransactionsWorkspace({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <section className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="font-display text-3xl font-semibold text-slate-950">
+            <h1 className="font-display text-[2.2rem] font-semibold tracking-tight text-foreground">
               Entrate e spese
             </h1>
-            <p className="mt-2 max-w-3xl text-sm text-slate-600 sm:text-base">
+            <p className="mt-2 max-w-3xl text-sm text-muted-foreground sm:text-base">
               Gestisci le transazioni del wallet con aggiornamenti immediati, filtri fluidi
               e sincronizzazione in background.
             </p>
@@ -216,13 +216,13 @@ export function TransactionsWorkspace({
       </section>
 
       {listError ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {listError}
         </div>
       ) : null}
 
       {transactionsQuery.error instanceof Error ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {transactionsQuery.error.message}
         </div>
       ) : null}

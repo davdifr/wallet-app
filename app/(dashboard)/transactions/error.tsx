@@ -15,12 +15,12 @@ export default function TransactionsError({ error, reset }: ErrorPageProps) {
   }, [error]);
 
   return (
-    <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700">
+    <div className="rounded-[1.75rem] bg-card p-6 shadow-card">
       <h2 className="font-display text-2xl font-semibold">Errore caricamento</h2>
-      <p className="mt-2 text-sm">
+      <p className="mt-2 text-sm text-muted-foreground">
         Non siamo riusciti a leggere le transazioni. Riprova tra un momento.
       </p>
-      <Button onClick={reset} className="mt-4">
+      <Button onClick={reset} className="mt-5">
         Riprova
       </Button>
     </div>

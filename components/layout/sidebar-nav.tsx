@@ -25,12 +25,12 @@ export const navItems = [
   },
   {
     href: "/recurring-incomes",
-    label: "Recurring Incomes",
+    label: "Entrate ricorrenti",
     mobileLabel: "Entrate",
     icon: Repeat
   },
-  { href: "/saving-goals", label: "Saving Goals", mobileLabel: "Goals", icon: Target },
-  { href: "/groups", label: "Group Expenses", mobileLabel: "Gruppi", icon: Users }
+  { href: "/saving-goals", label: "Obiettivi", mobileLabel: "Goals", icon: Target },
+  { href: "/groups", label: "Gruppi", mobileLabel: "Gruppi", icon: Users }
 ] as const;
 
 export function isActivePath(pathname: string, href: string) {
@@ -48,8 +48,8 @@ export function SidebarNav() {
   }
 
   return (
-    <nav className="space-y-2 rounded-3xl border border-white/70 bg-white/85 p-4 shadow-soft backdrop-blur">
-      <p className="px-2 text-xs font-medium uppercase tracking-[0.24em] text-slate-500">
+    <nav className="space-y-2 rounded-[1.75rem] border border-white/6 bg-card p-4 shadow-card">
+      <p className="px-2 text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
         Navigazione
       </p>
       {navItems.map((item) => {
@@ -65,10 +65,10 @@ export function SidebarNav() {
             onFocus={() => prefetchNavTarget(item.href)}
             onTouchStart={() => prefetchNavTarget(item.href)}
             className={cn(
-              "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition",
+              "flex min-h-11 items-center gap-3 rounded-[1.1rem] px-4 py-3 text-sm font-medium transition",
               active
-                ? "bg-slate-950 text-white"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                ? "bg-white/[0.08] text-[#55C7FF]"
+                : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
             )}
           >
             <Icon className="h-4 w-4" />

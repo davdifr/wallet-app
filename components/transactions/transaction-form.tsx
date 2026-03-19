@@ -43,7 +43,7 @@ function FieldError({ errors }: { errors?: string[] }) {
     return null;
   }
 
-  return <p className="text-xs text-red-600">{errors[0]}</p>;
+  return <p className="text-xs text-muted-foreground">{errors[0]}</p>;
 }
 
 function mapTransactionToFormValues(transaction: Transaction | null): TransactionFormValues {
@@ -171,7 +171,7 @@ export function TransactionForm({
         <div className="space-y-2 sm:col-span-2">
           <Label>Categoria</Label>
           {initialValues?.isLegacyCategoryFallback ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <div className="rounded-2xl border border-input bg-muted px-4 py-3 text-sm text-foreground">
               Categoria storica non mappata: <strong>{initialValues.category}</strong>. Se salvi
               la transazione verra riclassificata in <strong>Altro</strong> o in una categoria
               del catalogo che scegli qui sotto.
@@ -195,8 +195,8 @@ export function TransactionForm({
                   }
                   className={
                     isSelected
-                      ? "flex items-center gap-2 rounded-2xl border border-slate-950 bg-slate-950 px-3 py-3 text-left text-white"
-                      : "flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-slate-700"
+                      ? "flex items-center gap-2 rounded-2xl border border-input bg-muted px-3 py-3 text-left text-foreground"
+                      : "flex items-center gap-2 rounded-2xl border border-input bg-background px-3 py-3 text-left text-foreground"
                   }
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -241,9 +241,9 @@ export function TransactionForm({
         className={cn(
           "rounded-2xl border px-4 py-3 text-sm",
           state.success
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            ? "border-input bg-muted text-foreground"
             : state.message
-              ? "border-red-200 bg-red-50 text-red-700"
+              ? "border-input bg-muted text-foreground"
               : "hidden"
         )}
       >

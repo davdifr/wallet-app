@@ -30,23 +30,23 @@ export function RecurringIncomesList({
   onDelete
 }: RecurringIncomesListProps) {
   return (
-    <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
+    <Card>
       <CardHeader>
-        <CardTitle className="font-display text-2xl text-slate-950">
+        <CardTitle className="font-display text-[1.75rem] tracking-tight text-foreground">
           Ricorrenze attive e archiviate
         </CardTitle>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           Le occorrenze vengono trasformate in `transactions` di tipo income.
         </p>
       </CardHeader>
 
       <CardContent>
         {recurringIncomes.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-12 text-center">
-            <h3 className="font-display text-xl font-semibold text-slate-950">
+          <div className="rounded-[1.5rem] border border-dashed border-white/8 px-6 py-12 text-center">
+            <h3 className="font-display text-xl font-semibold text-foreground">
               Nessuna recurring income configurata
             </h3>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Crea la prima ricorrenza per iniziare a generare entrate automatiche.
             </p>
           </div>
@@ -58,15 +58,15 @@ export function RecurringIncomesList({
               return (
                 <div
                   key={item.id}
-                  className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-4 rounded-[1.5rem] bg-secondary p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-2xl bg-white p-2 text-slate-700">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-background text-foreground">
                         <CategoryIcon className="h-4 w-4" />
                       </span>
-                      <p className="font-medium text-slate-950">{item.category}</p>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500">
+                      <p className="font-medium text-foreground">{item.category}</p>
+                      <span className="rounded-full bg-background px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                         {item.frequency === "weekly"
                           ? "settimanale"
                           : item.frequency === "yearly"
@@ -76,27 +76,27 @@ export function RecurringIncomesList({
                       <span
                         className={
                           item.isActive
-                            ? "rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
-                            : "rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600"
+                            ? "rounded-full bg-background px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-[#7DF4C2]"
+                            : "rounded-full bg-background px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
                         }
                       >
                         {item.isActive ? "attiva" : "disattivata"}
                       </span>
                     </div>
                     {item.isLegacyCategoryFallback ? (
-                      <p className="text-xs text-amber-700">
+                      <p className="text-xs text-muted-foreground">
                         Categoria storica non standard: le nuove occorrenze useranno il fallback del catalogo.
                       </p>
                     ) : null}
-                    <p className="text-sm text-slate-600">{item.description}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                    <p className="text-xs text-muted-foreground">
                       {item.source} · prossimo evento {item.nextOccurrenceOn}
                       {item.endsOn ? ` · fine ${item.endsOn}` : ""}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-3 sm:items-end">
-                    <p className="font-display text-2xl font-semibold text-emerald-600">
+                    <p className="font-display text-2xl font-semibold tracking-tight text-[#7DF4C2]">
                       {formatCurrency(item.amount)}
                     </p>
 
@@ -124,7 +124,7 @@ export function RecurringIncomesList({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                        className="border-input text-foreground"
                         disabled={loadingId === item.id || deletingId === item.id}
                         onClick={() => onDelete(item)}
                       >

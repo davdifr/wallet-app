@@ -77,12 +77,12 @@ function MovementForm({
         await onSubmit();
       }}
     >
-      <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+      <div className="rounded-3xl border border-input bg-card p-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <TrendingUp className="h-4 w-4" />
           {mode === "manual_release" ? "Svincolo manuale" : "Versamento manuale"}
         </div>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-muted-foreground">
           Saldo attuale: {formatCurrency(balance)}
         </p>
       </div>
@@ -157,18 +157,18 @@ function SettingsForm({
         await onSubmit();
       }}
     >
-      <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
+      <div className="rounded-3xl border border-input bg-card p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <CalendarClock className="h-4 w-4" />
               Piano mensile attuale
             </div>
-            <p className="mt-2 text-sm text-slate-500">{currentStatusLabel}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{currentStatusLabel}</p>
           </div>
-          <div className="rounded-2xl bg-white px-4 py-3 text-right">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Importo</p>
-            <p className="mt-1 text-lg font-semibold text-slate-950">
+          <div className="rounded-2xl border border-input px-4 py-3 text-right">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Importo</p>
+            <p className="mt-1 text-lg font-semibold text-foreground">
               {formatCurrency(currentAmount)}
             </p>
           </div>
@@ -209,7 +209,7 @@ function SettingsForm({
         </div>
       </div>
 
-      <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-700">
+      <label className="flex items-start gap-3 rounded-2xl border border-input bg-card px-4 py-3 text-sm text-foreground">
         <input
           type="checkbox"
           checked={values.isAutoEnabled}
@@ -219,11 +219,11 @@ function SettingsForm({
               isAutoEnabled: event.target.checked
             })
           }
-          className="mt-0.5 h-4 w-4 rounded border-slate-300"
+          className="mt-0.5 h-4 w-4 rounded border-input"
         />
         <span className="space-y-1">
-          <span className="block font-medium text-slate-900">Piano attivo</span>
-          <span className="block text-slate-500">
+          <span className="block font-medium text-foreground">Piano attivo</span>
+          <span className="block text-muted-foreground">
             L&apos;allocazione automatica parte dal mese selezionato.
           </span>
         </span>
@@ -290,22 +290,18 @@ export function PiggyBankCard({
     <>
       <DashboardShellCard
         title="Salvadanaio"
-        subtitle="Fondi vincolati ma inclusi nel patrimonio"
-        action={
-          <div className="rounded-2xl bg-slate-100 p-2 text-slate-700">
-            <PiggyBank className="h-4 w-4" />
-          </div>
-        }
-        contentClassName="space-y-5"
+        subtitle="Fondi protetti, ma sempre dentro al patrimonio"
+        action={<PiggyBank className="mt-1 h-4 w-4 text-slate-500" />}
+        contentClassName="space-y-4"
       >
-        <div className="grid gap-4 lg:grid-cols-[1fr_18rem] lg:items-start">
-          <div className="rounded-[1.75rem] bg-slate-950 p-5 text-white">
-            <p className="text-sm text-slate-300">Saldo corrente</p>
-            <p className="mt-2 font-display text-4xl font-semibold">
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
+          <div className="rounded-[1.2rem] bg-white/[0.03] p-5 text-white">
+            <p className="text-sm text-slate-400">Saldo protetto</p>
+            <p className="mt-2 font-display text-[2.1rem] font-semibold tracking-tight text-[#7DF4C2]">
               {formatCurrency(summary.balance)}
             </p>
-            <p className="mt-2 text-sm text-slate-300">
-              Incluso nel patrimonio, escluso dal denaro spendibile.
+            <p className="mt-2 text-sm text-slate-400">
+              Non rientra nel denaro spendibile di oggi.
             </p>
           </div>
 
@@ -317,72 +313,70 @@ export function PiggyBankCard({
             >
               Gestisci salvadanaio
             </Button>
-            <p className="text-center text-xs text-slate-500">
-              Aggiunte, svincoli e piano mensile in un solo punto.
-            </p>
           </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
-              <CalendarClock className="h-4 w-4 text-slate-500" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-[1.2rem] bg-[#0D1320] p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-white">
+              <CalendarClock className="h-4 w-4 text-slate-400" />
               Piano mensile
             </div>
-            <p className="mt-2 text-sm text-slate-500">{planStatusLabel}</p>
-            <p className="mt-4 text-2xl font-semibold text-slate-950">
+            <p className="mt-2 text-sm text-slate-400">{planStatusLabel}</p>
+            <p className="mt-4 text-xl font-semibold tracking-tight text-white">
               {formatCurrency(summary.settings?.autoMonthlyAmount ?? 0)}
             </p>
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
-              <TrendingUp className="h-4 w-4 text-slate-500" />
-              Come funziona
+          <div className="rounded-[1.2rem] bg-[#0D1320] p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-white">
+              <TrendingUp className="h-4 w-4 text-slate-400" />
+              Ultimo movimento
             </div>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Il saldo del salvadanaio resta incluso nel patrimonio totale, ma viene
-              escluso dal denaro spendibile finche non lo svincoli.
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              {summary.recentMovements.length === 0
+                ? "Nessun movimento recente registrato."
+                : `${summary.recentMovements[0]?.movementType === "manual_release" ? "Svincolo" : "Movimento"} del ${summary.recentMovements[0]?.movementDate}.`}
             </p>
           </div>
         </div>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-slate-700">Ultimi movimenti</p>
+            <p className="text-sm font-medium text-white">Ultimi movimenti</p>
             <button
               type="button"
-              className="text-xs font-medium text-slate-500 transition hover:text-slate-800"
+              className="text-xs font-medium text-slate-400 transition"
               onClick={() => openManageModal("manual_add")}
             >
               Nuovo movimento
             </button>
           </div>
           {summary.recentMovements.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-6 text-sm text-slate-500">
+            <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-slate-400">
               Nessun movimento registrato nel salvadanaio.
             </div>
           ) : (
             <div className="space-y-2">
-              {summary.recentMovements.slice(0, 3).map((movement) => (
+              {summary.recentMovements.slice(0, 2).map((movement) => (
                 <div
                   key={movement.id}
-                  className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  className="flex items-center justify-between rounded-[1.1rem] bg-white/[0.03] px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-semibold text-white">
                       {movement.movementType === "manual_release"
                         ? "Svincolo"
                         : movement.movementType === "manual_add"
                           ? "Aggiunta"
                           : "Allocazione automatica"}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-400">
                       {movement.movementDate}
                       {movement.note ? ` · ${movement.note}` : ""}
                     </p>
                   </div>
-                  <p className="text-sm font-semibold text-slate-950">
+                  <p className="text-sm font-semibold text-white">
                     {formatCurrency(movement.amount)}
                   </p>
                 </div>
@@ -392,7 +386,7 @@ export function PiggyBankCard({
         </div>
 
         {message ? (
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+          <div className="rounded-[1.1rem] bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
             {message}
           </div>
         ) : null}
@@ -405,7 +399,7 @@ export function PiggyBankCard({
         description={currentTabCopy.description}
       >
         <div className="space-y-5">
-          <div className="grid grid-cols-3 gap-2 rounded-3xl border border-slate-200 bg-slate-50/80 p-2">
+          <div className="grid grid-cols-3 gap-2 rounded-[1.2rem] bg-[#0D1320] p-2">
             {([
               ["manual_add", "Aggiungi"],
               ["manual_release", "Svincola"],
@@ -415,10 +409,10 @@ export function PiggyBankCard({
                 key={tab}
                 type="button"
                 className={cn(
-                  "rounded-2xl px-4 py-3 text-sm font-medium transition",
+                  "rounded-[1rem] px-4 py-3 text-sm font-medium transition",
                   activeTab === tab
-                    ? "bg-white text-slate-950 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
+                    ? "bg-white text-[#08121F]"
+                    : "text-slate-400 hover:text-white"
                 )}
                 onClick={() => openManageModal(tab)}
               >

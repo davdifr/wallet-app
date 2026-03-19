@@ -41,14 +41,14 @@ function MemberAvatar({ name, avatarUrl }: MemberAvatarProps) {
 
   if (!shouldShowImage) {
     return (
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white shadow-sm">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-input bg-card text-sm font-semibold text-foreground">
         {getInitials(name || "Membro")}
       </div>
     );
   }
 
   return (
-    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-input bg-card">
       <Image
         src={avatarUrl ?? ""}
         alt={`Avatar di ${name}`}
@@ -103,18 +103,18 @@ export function GroupMembersSection({
 
   return (
     <>
-      <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
+      <Card className="bg-card">
         <CardHeader className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-slate-950 p-2 text-white">
+              <div className="rounded-2xl border border-input p-2 text-foreground">
                 <Users className="h-4 w-4" />
               </div>
               <div>
-                <CardTitle className="font-display text-2xl text-slate-950">
+                <CardTitle className="font-display text-2xl text-foreground">
                   Membri
                 </CardTitle>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   Invita utenti registrati o aggiungi partecipanti guest.
                 </p>
               </div>
@@ -132,7 +132,7 @@ export function GroupMembersSection({
             {group.group.members.map((member) => (
               <div
                 key={member.id}
-                className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4"
+                className="rounded-3xl border border-input bg-card p-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <MemberAvatar
@@ -142,13 +142,13 @@ export function GroupMembersSection({
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-base font-medium text-slate-950">{member.displayName}</p>
-                      <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
+                      <p className="text-base font-medium text-foreground">{member.displayName}</p>
+                      <span className="shrink-0 rounded-full border border-input bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                         {roleLabel[member.role]}
                       </span>
                     </div>
 
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {member.isGuest
                         ? member.guestEmail || "Guest senza email"
                         : member.email || "Utente registrato"}
@@ -161,7 +161,7 @@ export function GroupMembersSection({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:w-auto"
+                        className="w-full sm:w-auto"
                         disabled={removingMemberId === member.id}
                         onClick={() => void onRemoveMember(member.id)}
                       >

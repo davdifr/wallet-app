@@ -69,20 +69,20 @@ function getExpenseStatusBadge(group: GroupDetails, expense: SharedExpense) {
   if (pendingSettlementsCount > 0) {
     return {
       label: `${pendingSettlementsCount} rimborsi in attesa`,
-      className: "bg-amber-100 text-amber-800 hover:bg-amber-100"
+      className: "border border-input bg-muted text-foreground"
     };
   }
 
   if (openSplitsCount > 0) {
     return {
       label: "Quote da regolare",
-      className: "bg-slate-200 text-slate-700 hover:bg-slate-200"
+      className: "border border-input bg-muted text-foreground"
     };
   }
 
   return {
     label: "Tutto regolato",
-    className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
+    className: "border border-input bg-muted text-foreground"
   };
 }
 
@@ -114,27 +114,27 @@ function ExpenseDetailContent({
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Importo</p>
-          <p className="mt-2 font-display text-2xl font-semibold text-slate-950">
+        <div className="rounded-2xl border border-input bg-card p-4">
+          <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Importo</p>
+          <p className="mt-2 font-display text-2xl font-semibold text-foreground">
             {formatCurrency(expense.amount)}
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Pagata da</p>
-          <p className="mt-2 text-sm font-medium text-slate-900">
+        <div className="rounded-2xl border border-input bg-card p-4">
+          <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Pagata da</p>
+          <p className="mt-2 text-sm font-medium text-foreground">
             {expense.paidByMember?.displayName ?? "Membro"}
           </p>
-          <p className="mt-1 text-xs text-slate-500">{expense.expenseDate}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{expense.expenseDate}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Stato</p>
+        <div className="rounded-2xl border border-input bg-card p-4">
+          <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Stato</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <Badge variant="secondary" className="bg-white text-slate-700">
+            <Badge variant="secondary">
               {openSplitsCount === 0 ? "Tutte le quote coperte" : `${openSplitsCount} quote aperte`}
             </Badge>
             {pendingSettlementsCount > 0 ? (
-              <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+              <Badge className="border border-input bg-muted text-foreground">
                 {pendingSettlementsCount} rimborsi in attesa
               </Badge>
             ) : null}
@@ -143,7 +143,7 @@ function ExpenseDetailContent({
       </div>
 
       {expense.description ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+        <div className="rounded-2xl border border-input bg-card px-4 py-3 text-sm text-muted-foreground">
           {expense.description}
         </div>
       ) : null}
@@ -159,43 +159,43 @@ function ExpenseDetailContent({
           return (
             <div
               key={split.id}
-              className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 lg:grid-cols-[minmax(0,1fr)_320px]"
+              className="grid gap-3 rounded-2xl border border-input bg-card p-4 lg:grid-cols-[minmax(0,1fr)_320px]"
             >
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium text-slate-900">
+                  <p className="font-medium text-foreground">
                     {split.member?.displayName ?? "Membro"}
                   </p>
                   {expense.paidByMemberId === split.groupMemberId ? (
-                    <Badge variant="secondary" className="bg-slate-900 text-white">
+                    <Badge variant="secondary">
                       Pagatore
                     </Badge>
                   ) : null}
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-3">
-                  <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Quota</p>
-                    <p className="mt-1 text-sm font-medium text-slate-900">
+                  <div className="rounded-xl border border-input bg-card px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Quota</p>
+                    <p className="mt-1 text-sm font-medium text-foreground">
                       {formatCurrency(split.amount)}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Saldato</p>
-                    <p className="mt-1 text-sm font-medium text-slate-900">
+                  <div className="rounded-xl border border-input bg-card px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Saldato</p>
+                    <p className="mt-1 text-sm font-medium text-foreground">
                       {formatCurrency(split.settledAmount)}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Residuo</p>
-                    <p className="mt-1 text-sm font-medium text-slate-900">
+                  <div className="rounded-xl border border-input bg-card px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Residuo</p>
+                    <p className="mt-1 text-sm font-medium text-foreground">
                       {formatCurrency(remainingAmount)}
                     </p>
                   </div>
                 </div>
 
                 {pendingSplitSettlements.length > 0 ? (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <div className="rounded-2xl border border-input bg-muted px-4 py-3 text-sm text-foreground">
                     {pendingSplitSettlements.map((settlement) => (
                       <p key={settlement.id}>
                         Rimborso in attesa: {formatCurrency(settlement.amount)}
@@ -222,8 +222,8 @@ function ExpenseDetailContent({
                 <div
                   className={
                     pendingSplitSettlements.length > 0
-                      ? "rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-                      : "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+                      ? "rounded-2xl border border-input bg-muted px-4 py-3 text-sm text-foreground"
+                      : "rounded-2xl border border-input bg-muted px-4 py-3 text-sm text-foreground"
                   }
                 >
                   {expense.paidByMemberId === split.groupMemberId
@@ -292,18 +292,18 @@ export function GroupExpensesSection({
 
   return (
     <>
-      <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
+      <Card className="bg-card">
         <CardHeader className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-slate-950 p-2 text-white">
+              <div className="rounded-2xl border border-input p-2 text-foreground">
                 <ReceiptText className="h-4 w-4" />
               </div>
               <div>
-                <CardTitle className="font-display text-2xl text-slate-950">
+                <CardTitle className="font-display text-2xl text-foreground">
                   Spese condivise
                 </CardTitle>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   Registra una spesa e poi gestisci i rimborsi quota per quota.
                 </p>
               </div>
@@ -318,12 +318,12 @@ export function GroupExpensesSection({
 
         <CardContent>
           {group.expenses.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-10 text-center text-sm text-slate-500">
+            <div className="rounded-3xl border border-dashed border-input px-6 py-10 text-center text-sm text-muted-foreground">
               Nessuna spesa ancora registrata per questo gruppo.
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 rounded-3xl border border-input bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-2">
                   {filterOptions.map((option) => (
                     <button
@@ -332,8 +332,8 @@ export function GroupExpensesSection({
                       onClick={() => setActiveFilter(option.key)}
                       className={
                         activeFilter === option.key
-                          ? "rounded-full bg-slate-950 px-3 py-2 text-xs font-medium text-white"
-                          : "rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600"
+                          ? "rounded-full border border-input bg-muted px-3 py-2 text-xs font-medium text-foreground"
+                          : "rounded-full border border-input bg-card px-3 py-2 text-xs font-medium text-foreground"
                       }
                     >
                       {option.label}
@@ -342,7 +342,7 @@ export function GroupExpensesSection({
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Ordina</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Ordina</p>
                   <div className="w-full sm:w-56">
                     <Select
                       value={sortBy}
@@ -357,7 +357,7 @@ export function GroupExpensesSection({
               </div>
 
               <div className="flex items-center justify-between px-1">
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   {filteredExpenses.length === group.expenses.length
                     ? `${group.expenses.length} spese`
                     : `${filteredExpenses.length} su ${group.expenses.length} spese`}
@@ -365,7 +365,7 @@ export function GroupExpensesSection({
               </div>
 
               {filteredExpenses.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-10 text-center text-sm text-slate-500">
+                <div className="rounded-3xl border border-dashed border-input px-6 py-10 text-center text-sm text-muted-foreground">
                   Nessuna spesa corrisponde al filtro selezionato.
                 </div>
               ) : null}
@@ -375,7 +375,7 @@ export function GroupExpensesSection({
                   key={expense.id}
                   type="button"
                   onClick={() => setSelectedExpenseId(expense.id)}
-                  className="w-full rounded-3xl border border-slate-200 bg-slate-50/80 p-5 text-left transition hover:border-slate-300 hover:bg-slate-50"
+                  className="w-full rounded-3xl border border-input bg-card p-5 text-left transition"
                 >
                   {(() => {
                     const { openSplitsCount, pendingSettlementsCount } = getExpenseStats(
@@ -389,13 +389,13 @@ export function GroupExpensesSection({
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0 space-y-2">
                             <div className="flex items-center gap-2">
-                              <h3 className="truncate text-base font-semibold text-slate-950 sm:text-lg">
+                              <h3 className="truncate text-base font-semibold text-foreground sm:text-lg">
                                 {expense.title}
                               </h3>
-                              <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                             </div>
 
-                            <div className="flex flex-wrap gap-2 text-xs text-slate-500 sm:text-sm">
+                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground sm:text-sm">
                               <span className="inline-flex items-center gap-1">
                                 <CalendarDays className="h-3.5 w-3.5" />
                                 {expense.expenseDate}
@@ -414,20 +414,20 @@ export function GroupExpensesSection({
                           </div>
 
                           <div className="shrink-0 text-right">
-                            <p className="font-display text-2xl font-semibold text-slate-950">
+                            <p className="font-display text-2xl font-semibold text-foreground">
                               {formatCurrency(expense.amount)}
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-4 flex flex-wrap gap-2">
-                          <Badge variant="secondary" className="bg-white text-slate-700">
+                          <Badge variant="secondary">
                             {openSplitsCount === 0
                               ? "Nessuna quota aperta"
                               : `${openSplitsCount} quote aperte`}
                           </Badge>
                           <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
-                          <Badge variant="secondary" className="bg-white text-slate-700">
+                          <Badge variant="secondary">
                             {expense.splits.length} quote
                           </Badge>
                         </div>

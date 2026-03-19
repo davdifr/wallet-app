@@ -23,7 +23,7 @@ function FieldError({ errors }: { errors?: string[] }) {
     return null;
   }
 
-  return <p className="text-xs text-red-600">{errors[0]}</p>;
+  return <p className="text-xs text-muted-foreground">{errors[0]}</p>;
 }
 
 type SavingGoalFormProps = {
@@ -145,7 +145,7 @@ export function SavingGoalForm({
           }
         />
         <FieldError errors={state.errors?.targetDate} />
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           Facoltativa. Se la lasci vuota, il sistema stima il tempo al traguardo.
         </p>
       </div>
@@ -154,9 +154,9 @@ export function SavingGoalForm({
         className={cn(
           "rounded-2xl border px-4 py-3 text-sm",
           state.success
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            ? "border-input bg-muted text-foreground"
             : state.message
-              ? "border-red-200 bg-red-50 text-red-700"
+              ? "border-input bg-muted text-foreground"
               : "hidden"
         )}
       >

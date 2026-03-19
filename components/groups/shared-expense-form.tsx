@@ -140,7 +140,7 @@ export function SharedExpenseForm({
 
   return (
     <form
-      className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-4"
+      className="space-y-4 rounded-3xl border border-input bg-card p-4"
       onSubmit={async (event) => {
         event.preventDefault();
 
@@ -253,10 +253,10 @@ export function SharedExpenseForm({
       </div>
 
       {splitMethod === "custom" ? (
-        <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-4">
+        <div className="space-y-3 rounded-3xl border border-input bg-background p-4">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-slate-800">Divisione con slider</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm font-medium text-foreground">Divisione con slider</p>
+            <p className="text-xs text-muted-foreground">
               La somma resta sempre al 100% e gli altri membri si adattano automaticamente
             </p>
           </div>
@@ -269,16 +269,16 @@ export function SharedExpenseForm({
             return (
               <div
                 key={member.id}
-                className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
+                className="rounded-2xl border border-input bg-card p-4"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <Label htmlFor={`split-${member.id}`}>{member.displayName}</Label>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {percentage}% · quota € {allocatedAmount.toFixed(2)}
                     </p>
                   </div>
-                  <span className="font-semibold text-slate-950">
+                  <span className="font-semibold text-foreground">
                     € {allocatedAmount.toFixed(2)}
                   </span>
                 </div>
@@ -300,7 +300,7 @@ export function SharedExpenseForm({
                       )
                     )
                   }
-                  className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-slate-950"
+                  className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-foreground"
                 />
               </div>
             );
@@ -312,9 +312,9 @@ export function SharedExpenseForm({
         className={cn(
           "rounded-2xl border px-3 py-2 text-xs",
           state.success
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            ? "border-input bg-muted text-foreground"
             : state.message
-              ? "border-red-200 bg-red-50 text-red-700"
+              ? "border-input bg-muted text-foreground"
               : "hidden"
         )}
       >

@@ -32,22 +32,22 @@ export function GroupDirectory({
   onSelectGroup
 }: GroupDirectoryProps) {
   return (
-    <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
+    <Card>
       <CardHeader>
-        <CardTitle className="font-display text-2xl text-slate-950">
+        <CardTitle className="font-display text-2xl text-foreground">
           I tuoi gruppi
         </CardTitle>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           Scegli un gruppo per vedere membri, spese e rimborsi nel contesto giusto.
         </p>
       </CardHeader>
       <CardContent>
         {groups.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-12 text-center">
-            <h3 className="font-display text-xl font-semibold text-slate-950">
+          <div className="rounded-3xl border border-dashed border-input px-6 py-12 text-center">
+            <h3 className="font-display text-xl font-semibold text-foreground">
               Nessun gruppo creato
             </h3>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Crea il primo gruppo per iniziare a dividere spese e rimborsi.
             </p>
           </div>
@@ -68,8 +68,8 @@ export function GroupDirectory({
                   className={cn(
                     "w-full rounded-3xl border p-4 text-left transition",
                     isActive
-                      ? "border-slate-950 bg-slate-950 text-white shadow-sm"
-                      : "border-slate-200 bg-slate-50/80 text-slate-950 hover:border-slate-300 hover:bg-white"
+                      ? "border-input bg-muted text-foreground"
+                      : "border-input bg-card text-foreground hover:bg-muted"
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -78,13 +78,13 @@ export function GroupDirectory({
                       <p
                         className={cn(
                           "mt-1 text-sm",
-                          isActive ? "text-slate-300" : "text-slate-500"
+                          "text-muted-foreground"
                         )}
                       >
                         {item.group.description || "Nessuna descrizione"}
                       </p>
                     </div>
-                    <ArrowRight className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-slate-400")} />
+                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
@@ -92,8 +92,8 @@ export function GroupDirectory({
                       className={cn(
                         "rounded-2xl border px-3 py-2",
                         isActive
-                          ? "border-white/10 bg-white/10 text-slate-100"
-                          : "border-slate-200 bg-white text-slate-600"
+                          ? "border-input bg-background text-foreground"
+                          : "border-input bg-background text-muted-foreground"
                       )}
                     >
                       <div className="flex items-center gap-2">
@@ -105,8 +105,8 @@ export function GroupDirectory({
                       className={cn(
                         "rounded-2xl border px-3 py-2",
                         isActive
-                          ? "border-white/10 bg-white/10 text-slate-100"
-                          : "border-slate-200 bg-white text-slate-600"
+                          ? "border-input bg-background text-foreground"
+                          : "border-input bg-background text-muted-foreground"
                       )}
                     >
                       {item.expenses.length} spese
@@ -115,8 +115,8 @@ export function GroupDirectory({
                       className={cn(
                         "rounded-2xl border px-3 py-2",
                         isActive
-                          ? "border-white/10 bg-white/10 text-slate-100"
-                          : "border-slate-200 bg-white text-slate-600"
+                          ? "border-input bg-background text-foreground"
+                          : "border-input bg-background text-muted-foreground"
                       )}
                     >
                       {openDebts} debiti aperti
@@ -125,8 +125,8 @@ export function GroupDirectory({
                       className={cn(
                         "rounded-2xl border px-3 py-2",
                         isActive
-                          ? "border-white/10 bg-white/10 text-slate-100"
-                          : "border-slate-200 bg-white text-slate-600"
+                          ? "border-input bg-background text-foreground"
+                          : "border-input bg-background text-muted-foreground"
                       )}
                     >
                       {positiveMembers > 0

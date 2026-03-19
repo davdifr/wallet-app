@@ -45,14 +45,14 @@ export function TransactionsList({
   onEdit
 }: TransactionsListProps) {
   return (
-    <Card className="border-white/70 bg-white/85 shadow-soft backdrop-blur">
+    <Card>
       <CardHeader className="space-y-4">
         <div className="space-y-2">
-          <CardTitle className="font-display text-2xl text-slate-950">
-            Lista transazioni
+          <CardTitle className="font-display text-[1.75rem] tracking-tight text-foreground">
+            Movimenti
           </CardTitle>
-          <p className="text-sm text-slate-500">
-            Lista reattiva con filtri locali e sincronizzazione in background.
+          <p className="text-sm leading-6 text-muted-foreground">
+            Scorri, filtra e ritrova in fretta le operazioni che contano davvero.
           </p>
         </div>
         <TransactionFilters
@@ -66,20 +66,20 @@ export function TransactionsList({
 
       <CardContent>
         {isLoading ? (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-12 text-center">
-            <h3 className="font-display text-xl font-semibold text-slate-950">
+          <div className="rounded-[1.2rem] bg-secondary px-6 py-12 text-center">
+            <h3 className="font-display text-xl font-semibold text-foreground">
               Aggiornamento in corso
             </h3>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Sto sincronizzando la lista con gli ultimi dati.
             </p>
           </div>
         ) : transactions.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-12 text-center">
-            <h3 className="font-display text-xl font-semibold text-slate-950">
+          <div className="rounded-[1.2rem] bg-secondary px-6 py-12 text-center">
+            <h3 className="font-display text-xl font-semibold text-foreground">
               Nessuna transazione trovata
             </h3>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Prova a cambiare i filtri oppure crea il primo movimento.
             </p>
           </div>
@@ -87,62 +87,78 @@ export function TransactionsList({
           <div className="space-y-3">
             {transactions.map((transaction) => {
               const CategoryIcon = getCategoryIcon(transaction.categorySlug, transaction.type);
+              const primaryLabel = transaction.source || transaction.category;
+              const secondaryLine = [transaction.category, transaction.date].filter(Boolean).join(" · ");
 
               return (
                 <div
                   key={transaction.id}
-                  className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="rounded-[1.2rem] bg-secondary p-4"
                 >
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-2xl bg-white p-2 text-slate-700">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] bg-background text-foreground">
                         <CategoryIcon className="h-4 w-4" />
-                      </span>
-                      <p className="font-medium text-slate-950">{transaction.category}</p>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500">
-                        {transaction.type === "income" ? "Entrata" : "Spesa"}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-600">{transaction.source}</p>
-                    {transaction.isLegacyCategoryFallback ? (
-                      <p className="text-xs text-amber-700">
-                        Categoria storica non standard: verra riclassificata al prossimo salvataggio.
-                      </p>
-                    ) : null}
-                    <p className="text-xs text-slate-500">
-                      {transaction.date}
-                      {transaction.note ? ` · ${transaction.note}` : ""}
-                    </p>
-                  </div>
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-[15px] font-semibold text-foreground">
+                            {primaryLabel}
+                          </p>
+                          <p className="mt-1 text-sm text-muted-foreground">{secondaryLine}</p>
+                        </div>
+                        <p
+                          className={`shrink-0 text-[1.05rem] font-semibold tracking-tight ${
+                            transaction.type === "income" ? "text-[#7DF4C2]" : "text-[#FF92B1]"
+                          }`}
+                        >
+                          {formatAmount(transaction.amount, transaction.type)}
+                        </p>
+                      </div>
 
-                  <div className="flex flex-col gap-3 sm:items-end">
-                    <p
-                      className={
-                        transaction.type === "income"
-                          ? "font-display text-xl font-semibold text-emerald-600"
-                          : "font-display text-xl font-semibold text-rose-600"
-                      }
-                    >
-                      {formatAmount(transaction.amount, transaction.type)}
-                    </p>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          {transaction.note ? (
+                            <p className="truncate text-sm text-muted-foreground">{transaction.note}</p>
+                          ) : transaction.isLegacyCategoryFallback ? (
+                            <p className="text-xs text-muted-foreground">
+                              Categoria storica non standard.
+                            </p>
+                          ) : (
+                            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                              {transaction.type === "income" ? "Entrata" : "Spesa"}
+                            </p>
+                          )}
+                        </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" size="sm" onClick={() => onEdit(transaction)}>
-                        <Pencil className="h-4 w-4" />
-                        Modifica
-                      </Button>
+                        <div className="flex shrink-0 gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-10 min-h-10 w-10 rounded-[0.9rem] px-0"
+                            onClick={() => onEdit(transaction)}
+                            aria-label={`Modifica ${primaryLabel}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                        disabled={deletingId === transaction.id}
-                        onClick={() => onDelete(transaction.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        {deletingId === transaction.id ? "Elimino..." : "Elimina"}
-                      </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-10 min-h-10 w-10 rounded-[0.9rem] px-0 text-muted-foreground hover:text-foreground"
+                            disabled={deletingId === transaction.id}
+                            onClick={() => onDelete(transaction.id)}
+                            aria-label={
+                              deletingId === transaction.id
+                                ? `Eliminazione in corso per ${primaryLabel}`
+                                : `Elimina ${primaryLabel}`
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -405,22 +405,22 @@ export function GroupDetailWorkspace({
           </Button>
         </div>
 
-        <div className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-soft backdrop-blur">
+        <div className="rounded-[2rem] border border-input bg-card p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="bg-white text-slate-700">
+                <Badge variant="secondary">
                   {group.group.members.length} membri
                 </Badge>
-                <Badge variant="secondary" className="bg-white text-slate-700">
+                <Badge variant="secondary">
                   {group.expenses.length} spese
                 </Badge>
               </div>
               <div>
-                <h1 className="font-display text-3xl font-semibold text-slate-950">
+                <h1 className="font-display text-3xl font-semibold text-foreground">
                   {group.group.name}
                 </h1>
-                <p className="mt-2 max-w-3xl text-sm text-slate-500 sm:text-base">
+                <p className="mt-2 max-w-3xl text-sm text-muted-foreground sm:text-base">
                   {group.group.description || "Nessuna descrizione disponibile."}
                 </p>
               </div>
@@ -430,7 +430,6 @@ export function GroupDetailWorkspace({
               <Button
                 type="button"
                 variant="outline"
-                className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                 disabled={pendingDeleteGroupId === group.group.id}
                 onClick={() => setIsDeleteModalOpen(true)}
               >
@@ -443,19 +442,19 @@ export function GroupDetailWorkspace({
       </section>
 
       {pageError ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {pageError}
         </div>
       ) : null}
 
       {groupQuery.error instanceof Error ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {groupQuery.error.message}
         </div>
       ) : null}
 
       {pageMessage ? (
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+        <div className="rounded-[1.5rem] bg-secondary px-5 py-4 text-sm text-foreground">
           {pageMessage}
         </div>
       ) : null}
@@ -501,8 +500,8 @@ export function GroupDetailWorkspace({
         description="Il gruppo verra chiuso definitivamente: spese e rimborsi condivisi verranno rimossi, mentre le transazioni personali resteranno nel wallet senza collegamento al gruppo."
       >
         <div className="space-y-5">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm text-slate-600">
-            <p className="font-medium text-slate-900">{group.group.name}</p>
+          <div className="rounded-3xl border border-input bg-card px-5 py-4 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">{group.group.name}</p>
             <p className="mt-1">
               Membri {group.group.members.length} · spese {group.expenses.length} · rimborsi{" "}
               {group.settlements.length}
@@ -520,7 +519,6 @@ export function GroupDetailWorkspace({
             </Button>
             <Button
               type="button"
-              className="bg-rose-600 text-white hover:bg-rose-700"
               onClick={() => void handleDeleteGroup()}
               disabled={pendingDeleteGroupId === group.group.id}
             >

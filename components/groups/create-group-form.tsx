@@ -80,9 +80,9 @@ export function CreateGroupForm({
         className={cn(
           "rounded-2xl border px-4 py-3 text-sm",
           state.success
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            ? "border-input bg-muted text-foreground"
             : state.message
-              ? "border-red-200 bg-red-50 text-red-700"
+              ? "border-input bg-muted text-foreground"
               : "hidden"
         )}
       >

@@ -35,7 +35,7 @@ export function SettlementForm({
 
   return (
     <form
-      className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-3"
+      className="flex flex-col gap-2 rounded-2xl border border-input bg-card p-3"
       onSubmit={async (event) => {
         event.preventDefault();
 
@@ -86,9 +86,9 @@ export function SettlementForm({
         className={cn(
           "rounded-xl border px-3 py-2 text-xs",
           state.success
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            ? "border-input bg-muted text-foreground"
             : state.message
-              ? "border-red-200 bg-red-50 text-red-700"
+              ? "border-input bg-muted text-foreground"
               : "hidden"
         )}
       >
