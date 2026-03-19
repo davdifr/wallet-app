@@ -32,7 +32,7 @@ type SavingGoalsWorkspaceProps = {
   initialGoals: SavingGoal[];
 };
 
-type GoalViewFilter = "all" | "active" | "attention" | "completed";
+type GoalViewFilter = "all" | "active" | "completed";
 
 function sortGoals(items: SavingGoal[]) {
   return sortSavingGoals(items);
@@ -101,10 +101,6 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
 
         if (activeFilter === "completed") {
           return goalMetrics.healthStatus === "completato";
-        }
-
-        if (activeFilter === "attention") {
-          return goalMetrics.healthStatus === "lento" || goalMetrics.healthStatus === "bloccato";
         }
 
         return goalMetrics.healthStatus !== "completato";
@@ -238,11 +234,10 @@ export function SavingGoalsWorkspace({ initialGoals }: SavingGoalsWorkspaceProps
       {pageMessage ? <NoticeCard title="Aggiornamento eseguito" message={pageMessage} /> : null}
 
       <section className="space-y-4">
-        <div className="ios-scroll -mx-1 overflow-x-auto pb-1">
-          <div className="flex min-w-max gap-2 px-1">
+        <div className="-mx-1 pb-1">
+          <div className="flex min-w-full justify-center gap-2 px-1">
             {([
               ["active", "Da finanziare"],
-              ["attention", "Da spingere"],
               ["completed", "Completati"],
               ["all", "Tutti"]
             ] as const).map(([value, label]) => (

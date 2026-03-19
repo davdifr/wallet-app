@@ -36,22 +36,6 @@ const statusCopy = {
   }
 } as const;
 
-function buildNote(result: DailyBudgetResult) {
-  if (result.warnings.negativeBudget) {
-    return "Rientra nelle spese variabili per recuperare margine gia nei prossimi giorni.";
-  }
-
-  if (result.warnings.underfundedGoals) {
-    return "Una parte dei goal sta perdendo copertura teorica rispetto al ritmo abituale.";
-  }
-
-  if (result.warnings.insufficientLiquidity) {
-    return "Il denaro davvero spendibile e quasi esaurito fino a fine mese.";
-  }
-
-  return "Il margine di oggi tiene insieme spendibile, salvadanaio e protezione dei goal.";
-}
-
 export function DailyBudgetCard({
   result,
   totalWealth,
@@ -115,16 +99,11 @@ export function DailyBudgetCard({
         </div>
 
         <div className="rounded-[1.2rem] bg-[#0D1320] px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Mese in corso</p>
-              <p className="mt-1 text-sm text-slate-300">
-                Giorno {result.daysElapsed} di {result.daysInMonth}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-slate-300">{buildNote(result)}</p>
-            </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Mese in corso</p>
+            <p className="mt-1 text-sm text-slate-300">
+              Giorno {result.daysElapsed} di {result.daysInMonth}
+            </p>
           </div>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/8">
             <div
