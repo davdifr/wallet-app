@@ -63,6 +63,29 @@ function getExpenseStats(group: GroupDetails, expense: SharedExpense) {
   };
 }
 
+function getExpenseStatusBadge(group: GroupDetails, expense: SharedExpense) {
+  const { openSplitsCount, pendingSettlementsCount } = getExpenseStats(group, expense);
+
+  if (pendingSettlementsCount > 0) {
+    return {
+      label: `${pendingSettlementsCount} rimborsi in attesa`,
+      className: "bg-amber-100 text-amber-800 hover:bg-amber-100"
+    };
+  }
+
+  if (openSplitsCount > 0) {
+    return {
+      label: "Quote da regolare",
+      className: "bg-slate-200 text-slate-700 hover:bg-slate-200"
+    };
+  }
+
+  return {
+    label: "Tutto regolato",
+    className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
+  };
+}
+
 function compareExpenses(a: SharedExpense, b: SharedExpense, sort: ExpenseSort) {
   if (sort === "amount-desc") {
     return b.amount - a.amount;
@@ -359,6 +382,7 @@ export function GroupExpensesSection({
                       group,
                       expense
                     );
+                    const statusBadge = getExpenseStatusBadge(group, expense);
 
                     return (
                       <>
@@ -402,15 +426,7 @@ export function GroupExpensesSection({
                               ? "Nessuna quota aperta"
                               : `${openSplitsCount} quote aperte`}
                           </Badge>
-                          {pendingSettlementsCount > 0 ? (
-                            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-                              {pendingSettlementsCount} rimborsi in attesa
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
-                              Situazione stabile
-                            </Badge>
-                          )}
+                          <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
                           <Badge variant="secondary" className="bg-white text-slate-700">
                             {expense.splits.length} quote
                           </Badge>
