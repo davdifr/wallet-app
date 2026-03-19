@@ -14,6 +14,7 @@ Il database pubblico Supabase modella sia finanza personale sia collaborazione d
 - `goal_contributions`
 - `groups`
 - `group_members`
+- `group_member_views`
 - `shared_expenses`
 - `shared_expense_splits`
 - `settlements`
@@ -258,6 +259,27 @@ Campi chiave:
 
 Osservazioni:
 
+- l'ingresso nel gruppo (`joined_at`) e usato anche come baseline per il primo calcolo unread delle spese condivise.
+
+### `group_member_views`
+
+Scopo:
+
+- stato di visualizzazione per utente e gruppo, usato per capire se esistono nuove shared expenses non ancora viste.
+
+Campi chiave:
+
+- `group_id`
+- `user_id`
+- `last_viewed_shared_expenses_at`
+
+Osservazioni:
+
+- la coppia `(group_id, user_id)` e unica.
+- questa tabella non memorizza un contatore unread, ma solo il timestamp dell'ultima visualizzazione.
+- il flag unread viene derivato a runtime confrontando `shared_expenses.created_at` con `last_viewed_shared_expenses_at`.
+- le spese create dall'utente stesso non vengono considerate unread per quell'utente.
+
 - supporta sia utenti reali dell'app sia ospiti senza account.
 - `group_id + user_id` e univoco.
 - esiste anche un indice univoco per `guest_email` per gruppo.
@@ -336,6 +358,21 @@ Campi chiave:
 - `note`
 
 Osservazioni:
+
+- oltre al ruolo nel calcolo saldi, i settlement sono ora inclusi nella publication realtime per aggiornare live il dettaglio gruppo e le viste correlate.
+
+## Supabase Realtime
+
+Per il dominio `groups` il progetto usa Supabase Realtime sulle tabelle:
+
+- `public.shared_expenses`
+- `public.settlements`
+
+Note operative:
+
+- la publication usata e `supabase_realtime`;
+- il file `supabase/groups-realtime.sql` aggiunge le tabelle in modo idempotente;
+- la subscription client non legge dati sensibili extra: usa gli eventi per riallineare query e badge unread.
 
 - possono essere `pending` o `completed`.
 - il completamento aggiorna la quota collegata e genera transazioni collegate.

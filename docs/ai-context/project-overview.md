@@ -42,6 +42,8 @@ L'app e pensata come base full-stack pronta a crescere, non come MVP puramente s
 - L'app espone metadata PWA, manifest e icone Apple; il layout mobile gestisce anche le safe area iPhone in modalita homescreen standalone.
 - UI in italiano, con naming tecnico talvolta misto inglese/italiano.
 - La dashboard e stata alleggerita: la card principale e il daily budget; il salvadanaio usa una card compatta con una modale unica di gestione.
+- Il dominio gruppi ha aggiornamenti realtime per nuove spese condivise e settlement, usati per badge unread, navbar e riallineamento delle viste senza refresh manuale.
+- La sezione spese di gruppo e stata resa piu navigabile: lista compatta, filtri locali, ordinamento locale e dettaglio spesa in modale.
 
 ## Flussi principali
 
@@ -59,6 +61,7 @@ L'app e pensata come base full-stack pronta a crescere, non come MVP puramente s
 3. TanStack Query gestisce cache, refetch, invalidazione e sincronizzazione cross-tab dei dati principali.
 4. I service layer parlano con Supabase e incapsulano mapping tra righe database e tipi frontend.
 5. Le validazioni avvengono con Zod prima di arrivare alla logica di dominio.
+6. Per il dominio `groups`, alcuni aggiornamenti collaborativi passano anche da Supabase Realtime oltre che da invalidazione e sync cross-tab.
 
 ### Dashboard
 

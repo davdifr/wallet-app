@@ -55,6 +55,7 @@ Le viste principali usano TanStack Query con invalidazione per dominio e sync cr
 Nota aggiornata:
 
 - per i domini principali l'invalidazione locale e cross-tab passa da una mappa condivisa di query key, non da logiche duplicate sparse nei workspace.
+- per `groups` il comportamento live non dipende solo dall'invalidation: esiste anche un provider realtime globale nella shell che ascolta `shared_expenses` e `settlements`.
 
 ### 6. Directory utenti per gruppi
 
@@ -68,6 +69,32 @@ Header e bottom navigation mobile usano classi CSS basate su `env(safe-area-inse
 
 La dashboard non deve diventare una pagina di configurazione. I form lunghi o multi-step, soprattutto per il salvadanaio, dovrebbero stare in modali o viste dedicate.
 
+### 9. Dominio gruppi live
+
+Il dominio `groups` e ormai collaborativo in senso forte:
+
+- unread per gruppo e per utente;
+- badge navbar legato ai gruppi con nuove spese non viste;
+- aggiornamento realtime di lista gruppi, dettaglio gruppo e settlement.
+
+Se si tocca questa area, bisogna ragionare sempre insieme su:
+
+- service layer;
+- query cache `groups`;
+- sync cross-tab;
+- Supabase Realtime publication.
+
+### 10. UX spese di gruppo
+
+La sezione `Spese condivise` non e piu pensata come lista di card enormi con form inline ripetuti. Il pattern attuale e:
+
+- lista compatta e scansionabile;
+- filtri locali e ordinamento locale;
+- dettaglio spesa in modale;
+- form di rimborso dentro il dettaglio, non nella lista principale.
+
+Se si reinterviene sulla UX, evitare di riportare quote e settlement inline su ogni card.
+
 ## Debito tecnico e opportunita ad alto valore
 
 ### Priorita alta
@@ -78,6 +105,7 @@ La dashboard non deve diventare una pagina di configurazione. I form lunghi o mu
 - introdurre edit dove mancano;
 - centralizzare formattazione valuta/date e costanti condivise;
 - verificare completezza delle policy RLS per tutte le tabelle, non solo quelle lette nelle migrazioni.
+- aggiungere test piu diretti sul bridge realtime dei gruppi e su eventuali futuri eventi settlement live.
 
 ### Priorita media
 
@@ -135,6 +163,8 @@ La dashboard non deve diventare una pagina di configurazione. I form lunghi o mu
 - testare rimozione membri solo quando consentita;
 - testare delete gruppo con storico e cleanup transazioni correlate;
 - testare directory utenti se l'ambiente richiede nuove funzioni SQL.
+- testare unread/navbar se tocchi `shared_expenses`, `group_member_views` o subscription realtime.
+- testare che i badge di stato delle spese restino semanticamente coerenti: `Tutto regolato`, `Rimborsi in attesa`, `Quote da regolare`.
 
 ## Strategia consigliata per nuove AI
 

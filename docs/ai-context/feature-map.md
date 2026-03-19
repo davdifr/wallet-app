@@ -202,6 +202,9 @@
 - Calcolo saldi netti di gruppo.
 - Registrazione rimborsi su singola quota.
 - Workflow di accettazione settlement quando necessario.
+- Indicatore unread per nuove spese condivise non ancora viste dall'utente corrente.
+- Badge unread anche nella navbar mobile e desktop quando almeno un gruppo ha nuove spese.
+- Aggiornamento realtime del dominio gruppi per `shared_expenses` e `settlements`.
 - Rimozione partecipanti da parte dell'owner con controlli di sicurezza.
 - Eliminazione del gruppo anche in presenza di storico, con cleanup ordinato delle dipendenze lato service.
 - Sincronizzazione delle spese e dei rimborsi nel ledger `transactions`.
@@ -242,6 +245,26 @@
 7. In caso di settlement completato vengono generate transazioni speculari:
    una spesa per il payer e una entrata per il payee, entrambe marcate come `is_shared`.
 
+### Stato di visualizzazione e unread
+
+- Ogni gruppo espone `hasUnreadExpenses` nella lista.
+- Il flag e derivato confrontando l'ultima `shared_expense.created_at` rilevante con lo stato di visualizzazione per coppia `user + group`.
+- Se l'utente apre `/groups/[groupId]`, il gruppo viene marcato come visto.
+- Se l'utente crea lui stesso una nuova shared expense, il gruppo resta visto per lui.
+- Il pallino rosso sulla card gruppo e sulla navbar e solo un indicatore visuale, non esiste un centro notifiche completo.
+
+### UX attuale della sezione spese
+
+- La lista `Spese condivise` non mostra piu tutte le quote e i form inline per ogni item.
+- Ogni spesa appare come card compatta con titolo, importo, data, pagatore e stato sintetico.
+- Sono presenti filtri locali: `Tutte`, `Quote aperte`, `Rimborsi in attesa`.
+- E presente un ordinamento locale: `Piu recenti`, `Importo piu alto`, `Importo piu basso`.
+- Il dettaglio completo della spesa si apre in modale e contiene quote, rimborsi pendenti e form di settlement.
+- I badge di stato della lista distinguono chiaramente tra:
+  - `Tutto regolato`
+  - `Rimborsi in attesa`
+  - `Quote da regolare`
+
 ### Calcolo dei saldi di gruppo
 
 - Chi paga una spesa riceve credito pari all'intero importo.
@@ -258,6 +281,7 @@
 ### Routing gruppi
 
 - `/groups` mostra solo l'elenco gruppi.
+- `/groups` e anche il punto in cui compare il pallino rosso sulle card con nuove spese non viste.
 - `/groups/[groupId]` contiene dettagli, membri, spese, saldi e azioni del singolo gruppo.
 
 ## 8. API interne

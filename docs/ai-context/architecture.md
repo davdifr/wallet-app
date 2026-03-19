@@ -134,6 +134,7 @@ L'app non usa uno store globale custom per i dati server. Usa invece un approcci
 - helper condiviso per invalidare i domini dipendenti dalle mutazioni piu comuni;
 - sync cross-tab via `BroadcastChannel` con fallback `storage`;
 - prefetch di route e dati nelle tab principali.
+- per `groups`, bridge realtime client con Supabase Realtime per aggiornare unread, lista e dettagli senza refresh manuali.
 
 Questo e oggi il pattern preferito per nuove feature interattive.
 
@@ -148,6 +149,7 @@ Questo e oggi il pattern preferito per nuove feature interattive.
 
 - `lib/supabase/client.ts` espone un browser client typed.
 - Al momento la maggior parte della logica dati passa dal server, non direttamente dal client Supabase.
+- Eccezione importante: il dominio `groups` usa il client browser anche per subscription realtime su `shared_expenses` e `settlements`.
 
 ### Middleware sessione
 
@@ -193,6 +195,8 @@ I moduli in `lib/` contengono logica pura riutilizzabile e testabile.
 - `lib/saving-goals/forecast.ts`: stima di mesi e data di completamento dei goal.
 - `lib/saving-goals/sorting.ts`: ordinamento per priorita e vicinanza stimata al completamento.
 - `lib/group-expenses/calculations.ts`: split, parsing custom values e saldo di gruppo.
+- `lib/group-expenses/unread-expenses.ts`: calcolo puro del flag unread per gruppo.
+- `lib/group-expenses/realtime.ts`: helper puri per decidere come reagire agli eventi realtime del dominio gruppi.
 
 ## Pattern di stato lato client
 
@@ -203,6 +207,14 @@ I workspace client usano uno stile pragmatico:
 - `fetch` verso API interne tramite helper condiviso;
 - invalidazione per dominio e update locale selettivo dopo mutazioni;
 - ottimismo locale leggero dove utile.
+
+Nel dominio `groups` il pattern attuale e:
+
+- page server per bootstrap dati;
+- workspace client con query TanStack;
+- mutazioni via API interne;
+- invalidazione dominio `groups` e sync cross-tab;
+- subscription realtime globale nella shell per eventi collaborativi.
 
 Non c'e una state library globale classica per tutti gli stati. La parte condivisa riguarda soprattutto il server state.
 
