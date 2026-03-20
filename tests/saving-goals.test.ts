@@ -48,7 +48,8 @@ describe("saving goal calculations", () => {
     expect(metrics.remainingAmount).toBe(900);
     expect(metrics.totalManualContributionAmount).toBe(300);
     expect(metrics.monthlyAllocableAmount).toBe(90);
-    expect(metrics.estimatedMonthsToReach).toBe(9);
+    expect(metrics.monthlyContributionNeeded).toBe(75);
+    expect(metrics.estimatedMonthsToReach).toBe(10);
     expect(metrics.healthStatus).toBe("in_linea");
   });
 
@@ -112,6 +113,57 @@ describe("saving goal calculations", () => {
 
     expect(metrics.monthlyAllocableAmount).toBe(0);
     expect(metrics.healthStatus).toBe("bloccato");
+  });
+
+  it("senza storico non usa il residuo intero come quota mensile", () => {
+    const metrics = calculateSavingGoalMetrics(
+      buildGoal({
+        savedSoFar: 0,
+        targetAmount: 1200,
+        contributions: [],
+        monthlyAllocableAmount: 100,
+        protectionPreviewAmount: 100
+      }),
+      new Date("2026-03-18T12:00:00Z")
+    );
+
+    expect(metrics.monthlyContributionNeeded).toBe(100);
+    expect(metrics.estimatedMonthsToReach).toBe(12);
+    expect(metrics.healthStatus).toBe("in_linea");
+  });
+
+  it("non lascia che un accantonamento iniziale falsi il ritmo futuro", () => {
+    const metrics = calculateSavingGoalMetrics(
+      buildGoal({
+        targetAmount: 2000,
+        savedSoFar: 600,
+        contributions: [{ id: "c1", amount: 600, contributionDate: "2026-03-10", note: "" }],
+        monthlyAllocableAmount: 100,
+        protectionPreviewAmount: 100
+      }),
+      new Date("2026-03-18T12:00:00Z")
+    );
+
+    expect(metrics.averageMonthlySaved).toBe(200);
+    expect(metrics.monthlyContributionNeeded).toBeCloseTo(116.67, 2);
+    expect(metrics.estimatedMonthsToReach).toBe(14);
+    expect(metrics.healthStatus).toBe("lento");
+  });
+
+  it("usa la target date per calcolare la quota mensile necessaria", () => {
+    const metrics = calculateSavingGoalMetrics(
+      buildGoal({
+        savedSoFar: 300,
+        targetDate: "2026-05-31",
+        monthlyAllocableAmount: 200,
+        protectionPreviewAmount: 200
+      }),
+      new Date("2026-03-18T12:00:00Z")
+    );
+
+    expect(metrics.monthlyContributionNeeded).toBe(300);
+    expect(metrics.estimatedMonthsToReach).toBe(5);
+    expect(metrics.healthStatus).toBe("lento");
   });
 
   it("aggiorna le metriche dopo contributi manuali successivi", () => {

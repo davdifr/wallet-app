@@ -255,10 +255,7 @@ export async function getBudgetSnapshot(currentDate = new Date()): Promise<Budge
       },
       currentDate
     );
-    const reserveTarget = Math.min(
-      metrics.remainingAmount,
-      Math.max(metrics.monthlyContributionNeeded, metrics.averageMonthlySaved, 0)
-    );
+    const reserveTarget = Math.min(metrics.remainingAmount, metrics.monthlyContributionNeeded);
 
     return {
       goalId: goal.id,

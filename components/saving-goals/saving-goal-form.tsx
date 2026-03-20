@@ -110,6 +110,25 @@ export function SavingGoalForm({
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="targetDate">Data target</Label>
+          <Input
+            id="targetDate"
+            name="targetDate"
+            type="date"
+            value={values.targetDate}
+            onChange={(event) =>
+              setValues((current) => ({ ...current, targetDate: event.target.value }))
+            }
+          />
+          <p className="text-xs text-muted-foreground">
+            Facoltativa. Se la imposti, il ritmo mensile del goal viene calcolato su questa data.
+          </p>
+          <FieldError errors={state.errors?.targetDate} />
+        </div>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-2">
           <Label htmlFor="priority">Priorita</Label>
           <Select
             id="priority"

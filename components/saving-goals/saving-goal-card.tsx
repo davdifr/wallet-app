@@ -25,6 +25,14 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  }).format(new Date(`${value}T00:00:00.000Z`));
+}
+
 export function SavingGoalCard({
   goal,
   isSubmittingContribution = false,
@@ -41,6 +49,12 @@ export function SavingGoalCard({
     metrics.healthStatus === "completato"
       ? "Obiettivo raggiunto"
       : `${formatCurrency(metrics.monthlyContributionNeeded)}/mese`;
+  const sustainablePaceLabel =
+    metrics.monthlyAllocableAmount > 0
+      ? `Disponibile ora ${formatCurrency(metrics.monthlyAllocableAmount)}/mese`
+      : metrics.averageMonthlySaved > 0
+        ? `Storico contributi ${formatCurrency(metrics.averageMonthlySaved)}/mese`
+        : "Nessuna quota sostenibile disponibile al momento";
 
   return (
     <>
@@ -54,6 +68,11 @@ export function SavingGoalCard({
               {goal.description ? (
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                   {goal.description}
+                </p>
+              ) : null}
+              {goal.targetDate ? (
+                <p className="mt-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  Target entro {formatDate(goal.targetDate)}
                 </p>
               ) : null}
             </div>
@@ -93,9 +112,7 @@ export function SavingGoalCard({
               <span className="text-[10px] uppercase tracking-[0.14em]">Serve</span>
             </div>
             <p className="mt-3 text-lg font-semibold text-[#7DF4C2]">{monthlyNeedLabel}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Ritmo sostenibile {formatCurrency(metrics.averageMonthlySaved)}/mese
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{sustainablePaceLabel}</p>
           </div>
 
           <div className="rounded-[1.1rem] bg-secondary p-4">
@@ -107,7 +124,7 @@ export function SavingGoalCard({
             <p className="mt-1 text-xs text-muted-foreground">
               {metrics.estimatedReachDate
                 ? `Stima ${metrics.estimatedReachDate}`
-                : "Servono nuovi contributi per consolidare la stima"}
+                : "La stima apparira quando il budget del mese o lo storico daranno un ritmo stabile"}
             </p>
           </div>
         </div>
