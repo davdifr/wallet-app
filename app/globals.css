@@ -91,12 +91,12 @@
 
   .safe-mobile-sheet {
     max-height: min(92vh, calc(100dvh - var(--safe-area-top) - 0.75rem));
-    padding-bottom: calc(var(--safe-area-bottom) + 1.25rem);
   }
 
   .modal-sheet {
     overflow-x: hidden;
     overscroll-behavior-x: none;
+    padding-bottom: calc(var(--safe-area-bottom) + 1.25rem);
     touch-action: pan-y pinch-zoom;
   }
 

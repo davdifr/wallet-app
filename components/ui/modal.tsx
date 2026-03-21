@@ -33,7 +33,6 @@ export function Modal({
   const activePointerIdRef = useRef<number | null>(null);
   const dragOffsetRef = useRef(0);
   const dragStartYRef = useRef(0);
-  const didDragRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -69,7 +68,6 @@ export function Modal({
     activePointerIdRef.current = null;
     dragOffsetRef.current = 0;
     dragStartYRef.current = 0;
-    didDragRef.current = false;
     setDragOffset(0);
     setIsDragging(false);
   }, [open]);
@@ -82,7 +80,7 @@ export function Modal({
     setIsDragging(false);
   }
 
-  function handleDragStart(event: ReactPointerEvent<HTMLButtonElement>) {
+  function handleDragStart(event: ReactPointerEvent<HTMLDivElement>) {
     if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
@@ -90,27 +88,21 @@ export function Modal({
     activePointerIdRef.current = event.pointerId;
     dragStartYRef.current = event.clientY;
     dragOffsetRef.current = 0;
-    didDragRef.current = false;
     setIsDragging(true);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
-  function handleDragMove(event: ReactPointerEvent<HTMLButtonElement>) {
+  function handleDragMove(event: ReactPointerEvent<HTMLDivElement>) {
     if (activePointerIdRef.current !== event.pointerId) {
       return;
     }
 
     const nextOffset = Math.max(0, event.clientY - dragStartYRef.current);
-
-    if (nextOffset > 8) {
-      didDragRef.current = true;
-    }
-
     dragOffsetRef.current = nextOffset;
     setDragOffset(nextOffset);
   }
 
-  function handleDragEnd(event: ReactPointerEvent<HTMLButtonElement>) {
+  function handleDragEnd(event: ReactPointerEvent<HTMLDivElement>) {
     if (activePointerIdRef.current !== event.pointerId) {
       return;
     }
@@ -150,51 +142,44 @@ export function Modal({
         aria-modal="true"
         aria-labelledby="modal-title"
         className={cn(
-          "safe-mobile-sheet ios-scroll modal-sheet w-full max-w-2xl border border-white/6 bg-popover p-5 shadow-float",
-          "overflow-y-auto rounded-t-[2rem] transition-transform duration-200 ease-out will-change-transform sm:rounded-[2rem] sm:p-6",
+          "safe-mobile-sheet w-full max-w-2xl border border-white/6 bg-popover px-5 pt-5 shadow-float",
+          "flex flex-col overflow-hidden rounded-t-[2rem] transition-transform duration-200 ease-out will-change-transform sm:rounded-[2rem] sm:p-6",
           isDragging ? "transition-none" : null,
           className
         )}
         style={dragOffset > 0 ? { transform: `translateY(${dragOffset}px)` } : undefined}
       >
-        <button
-          type="button"
+        <div
+          aria-hidden="true"
           className="modal-drag-handle mx-auto mb-4 flex w-full cursor-grab touch-none select-none justify-center py-1 active:cursor-grabbing sm:hidden"
-          onClick={() => {
-            if (didDragRef.current) {
-              didDragRef.current = false;
-              return;
-            }
-
-            onOpenChange(false);
-          }}
           onPointerDown={handleDragStart}
           onPointerMove={handleDragMove}
           onPointerUp={handleDragEnd}
           onPointerCancel={handleDragEnd}
-          aria-label="Trascina verso il basso o tocca per chiudere la modale"
         >
           <span aria-hidden="true" className="h-1.5 w-12 rounded-full bg-white/10" />
-        </button>
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <h2 id="modal-title" className="font-display text-[1.55rem] font-semibold tracking-tight text-foreground">
-              {title}
-            </h2>
-            {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+        </div>
+        <div className="ios-scroll modal-sheet min-h-0 flex-1 overflow-y-auto pb-[calc(var(--safe-area-bottom)+1.25rem)] sm:pb-0">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h2 id="modal-title" className="font-display text-[1.55rem] font-semibold tracking-tight text-foreground">
+                {title}
+              </h2>
+              {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="sr-only h-11 w-11 items-center justify-center rounded-[1rem] bg-secondary text-muted-foreground transition hover:text-foreground sm:not-sr-only sm:flex"
+              aria-label="Chiudi modale"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="sr-only h-11 w-11 items-center justify-center rounded-[1rem] bg-secondary text-muted-foreground transition hover:text-foreground sm:not-sr-only sm:flex"
-            aria-label="Chiudi modale"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="mt-5">{children}</div>
         </div>
-
-        <div className="mt-5">{children}</div>
       </div>
     </div>,
     document.body
