@@ -1,6 +1,16 @@
 alter table public.recurring_incomes
   add column if not exists source text;
 
+alter table public.recurring_incomes
+  add column if not exists transaction_type public.transaction_type not null default 'income';
+
+alter table public.recurring_incomes
+  drop constraint if exists recurring_incomes_transaction_type_check;
+
+alter table public.recurring_incomes
+  add constraint recurring_incomes_transaction_type_check
+  check (transaction_type in ('income', 'expense'));
+
 update public.recurring_incomes
 set source = coalesce(source, description)
 where source is null;

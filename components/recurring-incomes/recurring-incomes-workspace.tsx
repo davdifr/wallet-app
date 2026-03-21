@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { fetchJson } from "@/lib/query/fetch-json";
-import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import { queryKeys } from "@/lib/query/query-keys";
 import { publishSyncEvent } from "@/lib/query/sync-events";
 import type {
@@ -107,7 +106,11 @@ export function RecurringIncomesWorkspace({
   );
 
   async function syncRecurringDomain() {
-    await invalidateDomainQueries(queryClient, "recurring-incomes");
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.piggyBank.all })
+    ]);
 
     publishSyncEvent({
       id: crypto.randomUUID(),
@@ -141,7 +144,7 @@ export function RecurringIncomesWorkspace({
 
       return {
         success: true,
-        message: "Entrata ricorrente creata."
+        message: "Ricorrenza creata."
       };
     } catch (error) {
       return {
@@ -149,7 +152,7 @@ export function RecurringIncomesWorkspace({
         message:
           error instanceof Error
             ? error.message
-            : "Impossibile creare l'entrata ricorrente."
+            : "Impossibile creare la ricorrenza."
       };
     }
   }
@@ -205,14 +208,14 @@ export function RecurringIncomesWorkspace({
         })
       );
 
-      setPageMessage("Entrata ricorrente eliminata. Le transazioni gia generate restano invariate.");
+      setPageMessage("Ricorrenza eliminata. Le transazioni gia generate restano invariate.");
       setRecurringIncomeToDelete(null);
       await syncRecurringDomain();
     } catch (error) {
       setPageError(
         error instanceof Error
           ? error.message
-          : "Impossibile eliminare l'entrata ricorrente."
+          : "Impossibile eliminare la ricorrenza."
       );
     } finally {
       setDeletingId(null);
@@ -224,11 +227,11 @@ export function RecurringIncomesWorkspace({
       <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-3">
           <Badge variant="secondary" className="w-fit">
-            Entrate automatiche
+            Movimenti automatici
           </Badge>
           <div>
             <h1 className="font-display text-[2.2rem] font-semibold tracking-tight text-foreground">
-              Entrate ricorrenti
+              Ricorrenze
             </h1>
           </div>
         </div>
@@ -236,7 +239,7 @@ export function RecurringIncomesWorkspace({
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button type="button" className="w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="h-4 w-4" />
-            Nuova entrata
+            Nuova ricorrenza
           </Button>
         </div>
       </section>
@@ -278,7 +281,7 @@ export function RecurringIncomesWorkspace({
       <Modal
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
-        title="Nuova entrata ricorrente"
+        title="Nuova ricorrenza"
         description="Configura una ricorrenza settimanale, mensile o annuale sincronizzata con le transazioni."
       >
         <RecurringIncomeForm

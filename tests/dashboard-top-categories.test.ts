@@ -23,6 +23,7 @@ describe("dashboard top categories compatibility", () => {
       registeredMonthlyIncome: 1200,
       spentThisMonth: 100,
       projectedRecurringIncome: 0,
+      projectedRecurringExpenses: 0,
       averageMonthlyExpenses: 200,
       piggyBankBalance: 50,
       piggyBankSummary: {
@@ -39,6 +40,7 @@ describe("dashboard top categories compatibility", () => {
         remainingMonthReserve: 100,
         protectedForGoals: 80,
         goalCapacity: 120,
+        projectedRecurringExpenses: 0,
         blockedInPiggyBank: 50,
         remainingMonthlyBudget: 720,
         explanation: "test",

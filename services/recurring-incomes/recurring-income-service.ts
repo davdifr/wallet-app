@@ -1,6 +1,8 @@
 import {
+  getExpenseCategoryDefinition,
   getIncomeCategoryDefinition,
   getCategoryLabel,
+  resolveExpenseCategoryCompatibility,
   resolveIncomeCategoryCompatibility
 } from "@/lib/categories/catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -38,7 +40,11 @@ class RecurringIncomeServiceError extends Error {
 function mapRecurringIncome(
   row: Database["public"]["Tables"]["recurring_incomes"]["Row"]
 ): RecurringIncome {
-  const persistedCategory = getIncomeCategoryDefinition(row.category_slug);
+  const transactionType = row.transaction_type === "expense" ? "expense" : "income";
+  const persistedCategory =
+    transactionType === "income"
+      ? getIncomeCategoryDefinition(row.category_slug)
+      : getExpenseCategoryDefinition(row.category_slug);
   const compatibility = persistedCategory
     ? {
         slug: persistedCategory.slug,
@@ -48,11 +54,14 @@ function mapRecurringIncome(
         isLegacyFallback: false,
         wasMatched: true
       }
-    : resolveIncomeCategoryCompatibility(row.category);
+    : transactionType === "income"
+      ? resolveIncomeCategoryCompatibility(row.category)
+      : resolveExpenseCategoryCompatibility(row.category);
 
   return {
     id: row.id,
     amount: row.amount,
+    type: transactionType,
     category: compatibility.displayLabel,
     categorySlug: compatibility.slug,
     isLegacyCategoryFallback: compatibility.isLegacyFallback,
@@ -110,11 +119,12 @@ export function getNextOccurrenceDate(
 }
 
 function buildRecurringTransactionDescription(values: {
+  type: "income" | "expense";
   category: string;
   description: string;
   source: string;
 }) {
-  return `Recurring income · ${values.category} · ${values.description} · ${values.source}`;
+  return `Recurring ${values.type} · ${values.category} · ${values.description} · ${values.source}`;
 }
 
 function getRecurringInstanceKey(recurringIncomeId: string, occurrenceDate: string) {
@@ -146,7 +156,8 @@ export async function createRecurringIncome(
   const payload: RecurringIncomeInsert = {
     user_id: userId,
     amount: Number(values.amount),
-    category: getCategoryLabel(values.categorySlug, "income"),
+    transaction_type: values.type,
+    category: getCategoryLabel(values.categorySlug, values.type),
     category_slug: values.categorySlug,
     description: values.description,
     source: values.source,
@@ -182,7 +193,7 @@ async function getOwnedRecurringIncome(userId: string, id: string) {
 
   if (error) {
     if (error.code === "PGRST116") {
-      throw new RecurringIncomeServiceError("Entrata ricorrente non trovata.", 404);
+      throw new RecurringIncomeServiceError("Ricorrenza non trovata.", 404);
     }
 
     throw new Error(error.message);
@@ -282,22 +293,32 @@ export async function materializeRecurringIncomes(
         break;
       }
 
+      const transactionType =
+        recurringIncome.transaction_type === "expense" ? "expense" : "income";
+      const compatibility =
+        transactionType === "income"
+          ? resolveIncomeCategoryCompatibility(recurringIncome.category)
+          : resolveExpenseCategoryCompatibility(recurringIncome.category);
+      const categorySlug =
+        transactionType === "income"
+          ? getIncomeCategoryDefinition(recurringIncome.category_slug)?.slug ?? compatibility.slug
+          : getExpenseCategoryDefinition(recurringIncome.category_slug)?.slug ?? compatibility.slug;
+
       const transactionPayload: TransactionInsert = {
         user_id: recurringIncome.user_id,
         amount: recurringIncome.amount,
         transaction_date: occurrenceDate,
-        category: resolveIncomeCategoryCompatibility(recurringIncome.category).canonicalLabel,
-        category_slug:
-          getIncomeCategoryDefinition(recurringIncome.category_slug)?.slug ??
-          resolveIncomeCategoryCompatibility(recurringIncome.category).slug,
+        category: compatibility.canonicalLabel,
+        category_slug: categorySlug,
         notes: `Generata automaticamente da ricorrenza ${recurringIncome.frequency}.`,
         merchant: recurringIncome.source,
         description: buildRecurringTransactionDescription({
-          category: resolveIncomeCategoryCompatibility(recurringIncome.category).canonicalLabel,
+          type: transactionType,
+          category: compatibility.canonicalLabel,
           description: recurringIncome.description,
           source: recurringIncome.source
         }),
-        transaction_type: "income",
+        transaction_type: transactionType,
         currency: recurringIncome.currency,
         recurring_income_id: recurringIncome.id,
         recurring_occurrence_date: occurrenceDate,

@@ -86,7 +86,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
         message:
           error instanceof Error
             ? error.message
-            : "Impossibile eliminare l'entrata ricorrente."
+            : "Impossibile eliminare la ricorrenza."
       },
       { status: getErrorStatus(error) }
     );

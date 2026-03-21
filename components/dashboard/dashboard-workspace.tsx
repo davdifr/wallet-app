@@ -48,6 +48,13 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
         body: JSON.stringify(values)
       })
   });
+  const deletePiggyBankSettingsMutation = useMutation({
+    mutationFn: async () =>
+      fetchJson<{ piggyBank: PiggyBankSummary }>("/api/piggy-bank/settings", {
+        method: "DELETE",
+        credentials: "same-origin"
+      })
+  });
   const createPiggyBankMovementMutation = useMutation({
     mutationFn: async (values: PiggyBankMovementFormValues) =>
       fetchJson<{ piggyBank: PiggyBankSummary }>("/api/piggy-bank/movements", {
@@ -126,6 +133,17 @@ export function DashboardWorkspace({ initialData }: DashboardWorkspaceProps) {
               return error instanceof Error
                 ? error.message
                 : "Impossibile salvare il movimento.";
+            }
+          }}
+          onDeleteSettings={async () => {
+            try {
+              await deletePiggyBankSettingsMutation.mutateAsync();
+              await syncBudgetDomains();
+              return "Piano mensile rimosso.";
+            } catch (error) {
+              return error instanceof Error
+                ? error.message
+                : "Impossibile rimuovere il piano mensile.";
             }
           }}
           onSubmitSettings={async (values) => {

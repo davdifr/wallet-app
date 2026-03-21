@@ -52,8 +52,8 @@ export function DailyBudgetCard({
   const summaryItems = [
     { label: "Totale", value: totalWealth, tone: "text-white" },
     {
-      label: "Disponibile",
-      value: formatCurrency(result.remainingMonthlyBudget),
+      label: "Liquido",
+      value: formatCurrency(result.monthlyAvailableLiquidity),
       tone: "text-[#55C7FF]"
     },
     {

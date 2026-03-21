@@ -147,6 +147,7 @@ create table public.recurring_incomes (
   user_id uuid not null references public.users (id) on delete cascade,
   amount numeric(14, 2) not null check (amount > 0),
   currency text not null default 'EUR',
+  transaction_type public.transaction_type not null default 'income',
   description text not null,
   category text,
   category_slug text,
@@ -158,7 +159,9 @@ create table public.recurring_incomes (
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
   constraint recurring_incomes_dates_check
-    check (ends_on is null or ends_on >= starts_on)
+    check (ends_on is null or ends_on >= starts_on),
+  constraint recurring_incomes_transaction_type_check
+    check (transaction_type in ('income', 'expense'))
 );
 
 create table public.monthly_budget_settings (

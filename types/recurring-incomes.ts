@@ -1,4 +1,4 @@
-import type { IncomeCategorySlug } from "@/lib/categories/catalog";
+import type { ExpenseCategorySlug, IncomeCategorySlug } from "@/lib/categories/catalog";
 import type { Database } from "@/types/database";
 
 export type RecurringIncomeFrequency = Extract<
@@ -6,11 +6,17 @@ export type RecurringIncomeFrequency = Extract<
   "weekly" | "monthly" | "yearly"
 >;
 
+export type RecurringTransactionType = Extract<
+  Database["public"]["Tables"]["recurring_incomes"]["Row"]["transaction_type"],
+  "income" | "expense"
+>;
+
 export type RecurringIncome = {
   id: string;
   amount: number;
+  type: RecurringTransactionType;
   category: string;
-  categorySlug?: IncomeCategorySlug | null;
+  categorySlug?: ExpenseCategorySlug | IncomeCategorySlug | null;
   isLegacyCategoryFallback?: boolean;
   description: string;
   source: string;
@@ -24,8 +30,9 @@ export type RecurringIncome = {
 
 export type RecurringIncomeFormValues = {
   amount: string;
+  type: RecurringTransactionType;
   category?: string;
-  categorySlug: IncomeCategorySlug;
+  categorySlug: ExpenseCategorySlug | IncomeCategorySlug;
   description: string;
   source: string;
   frequency: RecurringIncomeFrequency;

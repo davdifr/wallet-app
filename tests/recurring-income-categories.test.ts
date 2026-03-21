@@ -14,7 +14,7 @@ import {
   setRecurringIncomeActiveState
 } from "@/services/recurring-incomes/recurring-income-service";
 
-describe("recurring income categories", () => {
+describe("recurring categories", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -22,6 +22,7 @@ describe("recurring income categories", () => {
   it("accetta una categoria income valida e rifiuta categorie fuori scope", () => {
     const valid = recurringIncomeSchema.safeParse({
       amount: "1200",
+      type: "income",
       categorySlug: "salary",
       description: "Entrata mensile",
       source: "Datore di lavoro",
@@ -32,6 +33,7 @@ describe("recurring income categories", () => {
 
     const invalid = recurringIncomeSchema.safeParse({
       amount: "1200",
+      type: "income",
       categorySlug: "groceries",
       description: "Entrata mensile",
       source: "Datore di lavoro",
@@ -46,6 +48,33 @@ describe("recurring income categories", () => {
     if (valid.success) {
       expect(valid.data.category).toBe("Stipendio");
     }
+  });
+
+  it("accetta una categoria expense valida e rifiuta categorie income fuori scope", () => {
+    const valid = recurringIncomeSchema.safeParse({
+      amount: "85",
+      type: "expense",
+      categorySlug: "subscriptions",
+      description: "Streaming",
+      source: "Carta",
+      frequency: "monthly",
+      startsOn: "2026-03-01",
+      endsOn: ""
+    });
+
+    const invalid = recurringIncomeSchema.safeParse({
+      amount: "85",
+      type: "expense",
+      categorySlug: "salary",
+      description: "Streaming",
+      source: "Carta",
+      frequency: "monthly",
+      startsOn: "2026-03-01",
+      endsOn: ""
+    });
+
+    expect(valid.success).toBe(true);
+    expect(invalid.success).toBe(false);
   });
 
   it("mappa ricorrenze legacy non riconosciute sul fallback income", async () => {
@@ -136,6 +165,7 @@ describe("recurring income categories", () => {
 
     const recurringIncome = await createRecurringIncome("user-1", {
       amount: "1200",
+      type: "income",
       categorySlug: "salary",
       category: "Stipendio",
       description: "Entrata mensile",
@@ -149,11 +179,79 @@ describe("recurring income categories", () => {
       expect.objectContaining({
         category: "Stipendio",
         category_slug: "salary",
-        frequency: "monthly"
+        frequency: "monthly",
+        transaction_type: "income"
       })
     );
     expect(recurringIncome.categorySlug).toBe("salary");
     expect(recurringIncome.category).toBe("Stipendio");
+  });
+
+  it("materializza una spesa ricorrente come expense", async () => {
+    const insertSpy = vi.fn().mockResolvedValue({ error: null });
+    const updateSpy = vi.fn().mockResolvedValue({ error: null });
+
+    const mockClient = {
+      from: vi.fn((table: string) => {
+        if (table === "recurring_incomes") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                in: vi.fn(() => ({
+                  lte: vi.fn(() => ({
+                    order: vi.fn().mockResolvedValue({
+                      data: [
+                        {
+                          id: "expense-1",
+                          user_id: "user-1",
+                          amount: 19.99,
+                          transaction_type: "expense",
+                          category: "Spotify",
+                          category_slug: null,
+                          description: "Musica",
+                          source: "Carta",
+                          frequency: "monthly",
+                          starts_on: "2026-03-01",
+                          ends_on: null,
+                          next_occurrence_on: "2026-03-01",
+                          is_active: true,
+                          currency: "EUR",
+                          created_at: "2026-03-01T00:00:00.000Z"
+                        }
+                      ],
+                      error: null
+                    })
+                  }))
+                }))
+              }))
+            })),
+            update: vi.fn(() => ({
+              eq: updateSpy
+            }))
+          };
+        }
+
+        if (table === "transactions") {
+          return {
+            insert: insertSpy
+          };
+        }
+
+        throw new Error(`Unexpected table ${table}`);
+      })
+    };
+
+    vi.mocked(createSupabaseServerClient).mockResolvedValue(mockClient as never);
+
+    const result = await materializeRecurringIncomes(new Date("2026-03-19T10:00:00.000Z"));
+
+    expect(result.createdTransactions).toBe(1);
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category_slug: "subscriptions",
+        transaction_type: "expense"
+      })
+    );
   });
 
   it("materializza transazioni con categoria canonica coerente e mantiene la deduplica invariata", async () => {

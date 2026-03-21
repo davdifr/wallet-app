@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { piggyBankSettingsSchema } from "@/lib/validations/piggy-bank";
 import { getUser } from "@/services/auth/get-user";
-import { upsertPiggyBankSettings } from "@/services/piggy-bank/piggy-bank-service";
+import {
+  deletePiggyBankSettings,
+  upsertPiggyBankSettings
+} from "@/services/piggy-bank/piggy-bank-service";
 
 export async function PATCH(request: Request) {
   const user = await getUser();
@@ -34,6 +37,29 @@ export async function PATCH(request: Request) {
           error instanceof Error
             ? error.message
             : "Impossibile aggiornare il salvadanaio."
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE() {
+  const user = await getUser();
+
+  if (!user) {
+    return NextResponse.json({ message: "Sessione non valida." }, { status: 401 });
+  }
+
+  try {
+    const piggyBank = await deletePiggyBankSettings(user.id);
+    return NextResponse.json({ piggyBank });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : "Impossibile eliminare il piano del salvadanaio."
       },
       { status: 500 }
     );

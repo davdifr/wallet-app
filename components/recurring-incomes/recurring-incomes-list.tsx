@@ -41,16 +41,16 @@ export function RecurringIncomesList({
         {recurringIncomes.length === 0 ? (
           <div className="rounded-[1.5rem] border border-dashed border-white/8 px-6 py-12 text-center">
             <h3 className="font-display text-xl font-semibold text-foreground">
-              Nessuna recurring income configurata
+              Nessuna ricorrenza configurata
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Crea la prima ricorrenza per iniziare a generare entrate automatiche.
+              Crea la prima ricorrenza per iniziare a generare movimenti automatici.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
             {recurringIncomes.map((item) => {
-              const CategoryIcon = getCategoryIcon(item.categorySlug, "income");
+              const CategoryIcon = getCategoryIcon(item.categorySlug, item.type);
 
               return (
                 <div
@@ -79,6 +79,15 @@ export function RecurringIncomesList({
                       >
                         {item.isActive ? "attiva" : "disattivata"}
                       </span>
+                      <span
+                        className={
+                          item.type === "income"
+                            ? "rounded-full bg-background px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-[#7DF4C2]"
+                            : "rounded-full bg-background px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-[#FF92B1]"
+                        }
+                      >
+                        {item.type === "income" ? "entrata" : "spesa"}
+                      </span>
                     </div>
                     {item.isLegacyCategoryFallback ? (
                       <p className="text-xs text-muted-foreground">
@@ -93,7 +102,13 @@ export function RecurringIncomesList({
                   </div>
 
                   <div className="flex flex-col gap-3 sm:items-end">
-                    <p className="font-display text-2xl font-semibold tracking-tight text-[#7DF4C2]">
+                    <p
+                      className={
+                        item.type === "income"
+                          ? "font-display text-2xl font-semibold tracking-tight text-[#7DF4C2]"
+                          : "font-display text-2xl font-semibold tracking-tight text-[#FF92B1]"
+                      }
+                    >
                       {formatCurrency(item.amount)}
                     </p>
 

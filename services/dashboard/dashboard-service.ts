@@ -304,7 +304,7 @@ export async function getDashboardData(currentDate = new Date()): Promise<Dashbo
     incomeLabel: formatCurrency(
       budgetSnapshot.registeredMonthlyIncome + budgetSnapshot.projectedRecurringIncome
     ),
-    expensesLabel: formatCurrency(monthlyExpenses),
+    expensesLabel: formatCurrency(monthlyExpenses + budgetSnapshot.projectedRecurringExpenses),
     savingsRateLabel: `${Math.round(
       getSavingsRate(budgetSnapshot.totalWealth, budgetSnapshot.piggyBankBalance)
     )}%`,

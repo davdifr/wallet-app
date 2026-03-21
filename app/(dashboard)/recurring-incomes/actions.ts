@@ -49,15 +49,15 @@ export async function createRecurringIncomeAction(
 
     return {
       success: true,
-      message: "Entrata ricorrente creata."
+        message: "Ricorrenza creata."
     };
   } catch (error) {
     return {
       success: false,
       message:
         error instanceof Error
-          ? error.message
-          : "Impossibile creare l'entrata ricorrente."
+            ? error.message
+            : "Impossibile creare la ricorrenza."
     };
   }
 }

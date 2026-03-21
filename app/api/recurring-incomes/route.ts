@@ -61,7 +61,7 @@ export async function POST(request: Request) {
         message:
           error instanceof Error
             ? error.message
-            : "Impossibile creare l'entrata ricorrente."
+            : "Impossibile creare la ricorrenza."
       },
       { status: 500 }
     );

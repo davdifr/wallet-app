@@ -18,6 +18,7 @@ export type BudgetSnapshot = {
   registeredMonthlyIncome: number;
   spentThisMonth: number;
   projectedRecurringIncome: number;
+  projectedRecurringExpenses: number;
   averageMonthlyExpenses: number;
   piggyBankBalance: number;
   piggyBankSummary: PiggyBankSummary;
@@ -72,12 +73,13 @@ function getNextOccurrenceDate(
   }
 }
 
-function getProjectedRecurringIncomeAfterToday(
+function getProjectedRecurringAmountsAfterToday(
   recurringIncomes: RecurringIncomeRow[],
   monthEnd: string,
   today: string
 ) {
-  let total = 0;
+  let projectedIncome = 0;
+  let projectedExpenses = 0;
 
   for (const recurringIncome of recurringIncomes) {
     if (!recurringIncome.is_active) {
@@ -103,14 +105,21 @@ function getProjectedRecurringIncomeAfterToday(
       }
 
       if (occurrenceDate >= today) {
-        total += recurringIncome.amount;
+        if (recurringIncome.transaction_type === "expense") {
+          projectedExpenses += recurringIncome.amount;
+        } else {
+          projectedIncome += recurringIncome.amount;
+        }
       }
 
       occurrenceDate = getNextOccurrenceDate(occurrenceDate, frequency);
     }
   }
 
-  return roundCurrency(total);
+  return {
+    projectedIncome: roundCurrency(projectedIncome),
+    projectedExpenses: roundCurrency(projectedExpenses)
+  };
 }
 
 function getPriorityWeight(priority: SavingGoalRow["priority"]) {
@@ -204,7 +213,7 @@ export async function getBudgetSnapshot(currentDate = new Date()): Promise<Budge
       }
 
       return sum;
-    }, 0)
+    }, piggyBankSummary.balance)
   );
 
   const spentThisMonth = roundCurrency(
@@ -229,7 +238,8 @@ export async function getBudgetSnapshot(currentDate = new Date()): Promise<Budge
       .reduce((sum, transaction) => sum + transaction.amount, 0)
   );
 
-  const projectedRecurringIncome = getProjectedRecurringIncomeAfterToday(
+  const { projectedIncome: projectedRecurringIncome, projectedExpenses: projectedRecurringExpenses } =
+    getProjectedRecurringAmountsAfterToday(
     recurringIncomes,
     monthEnd,
     todayIso
@@ -267,6 +277,7 @@ export async function getBudgetSnapshot(currentDate = new Date()): Promise<Budge
   const dailyBudget = calculateDailyBudget({
     registeredMonthlyIncome,
     projectedRecurringIncome,
+    projectedRecurringExpenses,
     registeredMonthlyExpenses: spentThisMonth,
     piggyBankBalance: piggyBankSummary.balance,
     averageMonthlyExpenses,
@@ -280,6 +291,7 @@ export async function getBudgetSnapshot(currentDate = new Date()): Promise<Budge
     registeredMonthlyIncome,
     spentThisMonth,
     projectedRecurringIncome,
+    projectedRecurringExpenses,
     averageMonthlyExpenses,
     piggyBankBalance: piggyBankSummary.balance,
     piggyBankSummary,

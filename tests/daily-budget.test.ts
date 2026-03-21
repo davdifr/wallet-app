@@ -7,6 +7,7 @@ describe("calculateDailyBudget", () => {
     const result = calculateDailyBudget({
       registeredMonthlyIncome: 0,
       projectedRecurringIncome: 0,
+      projectedRecurringExpenses: 0,
       registeredMonthlyExpenses: 0,
       piggyBankBalance: 0,
       averageMonthlyExpenses: 0,
@@ -23,6 +24,7 @@ describe("calculateDailyBudget", () => {
     const result = calculateDailyBudget({
       registeredMonthlyIncome: 1000,
       projectedRecurringIncome: 500,
+      projectedRecurringExpenses: 0,
       registeredMonthlyExpenses: 200,
       piggyBankBalance: 0,
       averageMonthlyExpenses: 600,
@@ -41,6 +43,7 @@ describe("calculateDailyBudget", () => {
     const result = calculateDailyBudget({
       registeredMonthlyIncome: 1000,
       projectedRecurringIncome: 0,
+      projectedRecurringExpenses: 0,
       registeredMonthlyExpenses: 100,
       piggyBankBalance: 900,
       averageMonthlyExpenses: 400,
@@ -58,6 +61,7 @@ describe("calculateDailyBudget", () => {
     const result = calculateDailyBudget({
       registeredMonthlyIncome: 3000,
       projectedRecurringIncome: 0,
+      projectedRecurringExpenses: 0,
       registeredMonthlyExpenses: 1000,
       piggyBankBalance: 200,
       averageMonthlyExpenses: 1500,
@@ -80,6 +84,7 @@ describe("calculateDailyBudget", () => {
     const result = calculateDailyBudget({
       registeredMonthlyIncome: 1500,
       projectedRecurringIncome: 200,
+      projectedRecurringExpenses: 0,
       registeredMonthlyExpenses: 500,
       piggyBankBalance: 100,
       averageMonthlyExpenses: 900,
@@ -96,6 +101,7 @@ describe("calculateDailyBudget", () => {
     const result = calculateDailyBudget({
       registeredMonthlyIncome: 2000,
       projectedRecurringIncome: 0,
+      projectedRecurringExpenses: 0,
       registeredMonthlyExpenses: 500,
       piggyBankBalance: 0,
       averageMonthlyExpenses: 2500,
@@ -113,6 +119,7 @@ describe("calculateDailyBudget", () => {
     const result = calculateDailyBudget({
       registeredMonthlyIncome: 1200,
       projectedRecurringIncome: 0,
+      projectedRecurringExpenses: 0,
       registeredMonthlyExpenses: 700,
       piggyBankBalance: 0,
       averageMonthlyExpenses: 900,
@@ -132,6 +139,7 @@ describe("calculateDailyBudget", () => {
     const result = calculateDailyBudget({
       registeredMonthlyIncome: 2000,
       projectedRecurringIncome: 0,
+      projectedRecurringExpenses: 0,
       registeredMonthlyExpenses: 1200,
       piggyBankBalance: 100,
       averageMonthlyExpenses: 1500,
@@ -148,6 +156,7 @@ describe("calculateDailyBudget", () => {
     const result = calculateDailyBudget({
       registeredMonthlyIncome: 2000,
       projectedRecurringIncome: 0,
+      projectedRecurringExpenses: 0,
       registeredMonthlyExpenses: 1200,
       piggyBankBalance: 100,
       averageMonthlyExpenses: 1500,
@@ -158,5 +167,21 @@ describe("calculateDailyBudget", () => {
     expect(result.daysRemaining).toBe(1);
     expect(result.dailyBudget).toBe(400);
     expect(result.explanation).toContain("1 giorni residui");
+  });
+
+  it("sottrae le spese ricorrenti future dalla liquidita del mese", () => {
+    const result = calculateDailyBudget({
+      registeredMonthlyIncome: 1500,
+      projectedRecurringIncome: 0,
+      projectedRecurringExpenses: 300,
+      registeredMonthlyExpenses: 500,
+      piggyBankBalance: 0,
+      averageMonthlyExpenses: 700,
+      goals: [],
+      currentDate: new Date("2026-03-15T12:00:00Z")
+    });
+
+    expect(result.projectedRecurringExpenses).toBe(300);
+    expect(result.monthlyAvailableLiquidity).toBe(700);
   });
 });

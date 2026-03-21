@@ -14,7 +14,7 @@ export default async function RecurringIncomesPage() {
   } catch (error) {
     return (
       <NoticeCard
-        title="Sezione recurring incomes non disponibile"
+        title="Sezione ricorrenze non disponibile"
         message={getSupabasePageErrorMessage(error)}
       />
     );

@@ -91,6 +91,7 @@ export type Database = {
           next_occurrence_on: string;
           source: string;
           starts_on: string;
+          transaction_type: "income" | "expense";
           updated_at: string;
           user_id: string;
         };
@@ -107,6 +108,7 @@ export type Database = {
           next_occurrence_on: string;
           source: string;
           starts_on: string;
+          transaction_type?: "income" | "expense";
           user_id: string;
         };
         Update: {
@@ -122,6 +124,7 @@ export type Database = {
           next_occurrence_on?: string;
           source?: string;
           starts_on?: string;
+          transaction_type?: "income" | "expense";
           user_id?: string;
         };
       };

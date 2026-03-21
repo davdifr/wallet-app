@@ -9,6 +9,7 @@ export type DailyBudgetStatus = "in_linea" | "attenzione" | "fuori_budget";
 export type DailyBudgetInput = {
   registeredMonthlyIncome: number;
   projectedRecurringIncome: number;
+  projectedRecurringExpenses?: number;
   registeredMonthlyExpenses: number;
   piggyBankBalance: number;
   averageMonthlyExpenses: number;
@@ -29,6 +30,7 @@ export type DailyBudgetResult = {
   spendableBalance: number;
   monthlyAvailableLiquidity: number;
   projectedRecurringIncome: number;
+  projectedRecurringExpenses: number;
   blockedInPiggyBank: number;
   prudentialReserve: number;
   remainingMonthReserve: number;
@@ -93,6 +95,7 @@ function buildExplanation(input: {
 export function calculateDailyBudget(input: DailyBudgetInput): DailyBudgetResult {
   const registeredMonthlyIncome = Math.max(input.registeredMonthlyIncome, 0);
   const projectedRecurringIncome = Math.max(input.projectedRecurringIncome, 0);
+  const projectedRecurringExpenses = Math.max(input.projectedRecurringExpenses ?? 0, 0);
   const registeredMonthlyExpenses = Math.max(input.registeredMonthlyExpenses, 0);
   const blockedInPiggyBank = Math.max(input.piggyBankBalance, 0);
   const averageMonthlyExpenses = Math.max(input.averageMonthlyExpenses, 0);
@@ -103,6 +106,7 @@ export function calculateDailyBudget(input: DailyBudgetInput): DailyBudgetResult
     registeredMonthlyIncome +
     projectedRecurringIncome -
     registeredMonthlyExpenses -
+    projectedRecurringExpenses -
     blockedInPiggyBank;
   const prudentialReserve = averageMonthlyExpenses;
   const remainingMonthReserve = Math.max(prudentialReserve - registeredMonthlyExpenses, 0);
@@ -138,6 +142,7 @@ export function calculateDailyBudget(input: DailyBudgetInput): DailyBudgetResult
     spendableBalance: roundCurrency(spendableBalance),
     monthlyAvailableLiquidity: roundCurrency(monthlyAvailableLiquidity),
     projectedRecurringIncome: roundCurrency(projectedRecurringIncome),
+    projectedRecurringExpenses: roundCurrency(projectedRecurringExpenses),
     blockedInPiggyBank: roundCurrency(blockedInPiggyBank),
     prudentialReserve: roundCurrency(prudentialReserve),
     remainingMonthReserve: roundCurrency(remainingMonthReserve),

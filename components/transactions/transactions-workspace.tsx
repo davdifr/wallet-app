@@ -13,6 +13,11 @@ import { fetchJson } from "@/lib/query/fetch-json";
 import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import { queryKeys } from "@/lib/query/query-keys";
 import { publishSyncEvent } from "@/lib/query/sync-events";
+import {
+  removeTransactionFromCache,
+  upsertTransactionInCache,
+  type TransactionsListCache
+} from "@/lib/query/transactions-cache";
 import type {
   Transaction,
   TransactionCategoryOption,
@@ -126,13 +131,42 @@ export function TransactionsWorkspace({
       })
   });
 
+  function updateTransactionQueries(
+    updater: (cache: TransactionsListCache, filters: TransactionFilters) => TransactionsListCache
+  ) {
+    const transactionsQueries = queryClient.getQueriesData<TransactionsApiResponse>({
+      queryKey: queryKeys.transactions.all
+    });
+
+    for (const [queryKey, cache] of transactionsQueries) {
+      if (!cache || !Array.isArray(queryKey) || queryKey.length < 2) {
+        continue;
+      }
+
+      const [, queryFilters] = queryKey;
+
+      if (!queryFilters || typeof queryFilters !== "object") {
+        continue;
+      }
+
+      queryClient.setQueryData<TransactionsApiResponse>(
+        queryKey,
+        updater(cache, queryFilters as TransactionFilters)
+      );
+    }
+  }
+
   async function refreshTransactions(nextFilters: TransactionFilters) {
     setListError(null);
     setFilters(nextFilters);
   }
 
   async function syncTransactionDomain() {
-    await invalidateDomainQueries(queryClient, "transactions");
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.piggyBank.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.savingGoals.all })
+    ]);
 
     publishSyncEvent({
       id: crypto.randomUUID(),
@@ -146,7 +180,10 @@ export function TransactionsWorkspace({
     setListError(null);
 
     try {
-      await saveTransactionMutation.mutateAsync(values);
+      const { transaction } = await saveTransactionMutation.mutateAsync(values);
+      updateTransactionQueries((cache, queryFilters) =>
+        upsertTransactionInCache(cache, transaction, queryFilters)
+      );
       setEditingTransaction(null);
       setIsComposerOpen(false);
       await syncTransactionDomain();
@@ -170,6 +207,7 @@ export function TransactionsWorkspace({
 
     try {
       await deleteTransactionMutation.mutateAsync(transactionId);
+      updateTransactionQueries((cache) => removeTransactionFromCache(cache, transactionId));
 
       if (editingTransaction?.id === transactionId) {
         setEditingTransaction(null);

@@ -168,6 +168,20 @@ export async function upsertPiggyBankSettings(
   return getPiggyBankSummary();
 }
 
+export async function deletePiggyBankSettings(userId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("piggy_bank_settings")
+    .delete()
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return getPiggyBankSummary();
+}
+
 export async function createPiggyBankMovement(
   userId: string,
   values: PiggyBankMovementFormValues

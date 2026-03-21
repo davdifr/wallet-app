@@ -18,6 +18,7 @@ import type {
 type PiggyBankCardProps = {
   summary: PiggyBankSummary;
   onSubmitMovement: (values: PiggyBankMovementFormValues) => Promise<string | null>;
+  onDeleteSettings: () => Promise<string | null>;
   onSubmitSettings: (values: PiggyBankSettingsFormValues) => Promise<string | null>;
 };
 
@@ -136,17 +137,21 @@ function MovementForm({
 
 function SettingsForm({
   values,
+  hasExistingPlan,
   currentAmount,
   currentStatusLabel,
   onChange,
   onCancel,
+  onDelete,
   onSubmit
 }: {
   values: PiggyBankSettingsFormValues;
+  hasExistingPlan: boolean;
   currentAmount: number;
   currentStatusLabel: string;
   onChange: (values: PiggyBankSettingsFormValues) => void;
   onCancel: () => void;
+  onDelete: () => Promise<void>;
   onSubmit: () => Promise<void>;
 }) {
   return (
@@ -229,13 +234,20 @@ function SettingsForm({
         </span>
       </label>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={onCancel}>
-          Annulla
-        </Button>
-        <Button type="submit" className="w-full sm:w-auto">
-          Salva piano
-        </Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {hasExistingPlan ? (
+          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => void onDelete()}>
+            Rimuovi piano
+          </Button>
+        ) : null}
+        <div className="flex flex-col gap-3 sm:ml-auto sm:flex-row">
+          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={onCancel}>
+            Annulla
+          </Button>
+          <Button type="submit" className="w-full sm:w-auto">
+            Salva piano
+          </Button>
+        </div>
       </div>
     </form>
   );
@@ -243,11 +255,13 @@ function SettingsForm({
 
 export function PiggyBankCard({
   summary,
+  onDeleteSettings,
   onSubmitMovement,
   onSubmitSettings
 }: PiggyBankCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [isDeletingSettings, setIsDeletingSettings] = useState(false);
   const [activeTab, setActiveTab] = useState<PiggyBankModalTab>("manual_add");
   const [movementValues, setMovementValues] = useState<PiggyBankMovementFormValues>({
     amount: "",
@@ -329,6 +343,22 @@ export function PiggyBankCard({
             <Button type="button" className="w-full sm:w-auto" onClick={() => openManageModal("manual_add")}>
               Gestisci
             </Button>
+            {summary.settings?.isAutoEnabled ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+                disabled={isDeletingSettings}
+                onClick={async () => {
+                  setIsDeletingSettings(true);
+                  const nextMessage = await onDeleteSettings();
+                  setMessage(nextMessage);
+                  setIsDeletingSettings(false);
+                }}
+              >
+                {isDeletingSettings ? "Rimuovo piano..." : "Rimuovi piano"}
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -445,10 +475,24 @@ export function PiggyBankCard({
           {activeTab === "settings" ? (
             <SettingsForm
               values={settingsValues}
+              hasExistingPlan={summary.settings !== null}
               currentAmount={summary.settings?.autoMonthlyAmount ?? 0}
               currentStatusLabel={planStatusLabel}
               onChange={setSettingsValues}
               onCancel={() => setIsManageModalOpen(false)}
+              onDelete={async () => {
+                const nextMessage = await onDeleteSettings();
+                setMessage(nextMessage);
+
+                if (nextMessage && !nextMessage.toLowerCase().includes("impossibile")) {
+                  setSettingsValues({
+                    autoMonthlyAmount: "0",
+                    isAutoEnabled: false,
+                    startsOnMonth: getDefaultMonth()
+                  });
+                  setIsManageModalOpen(false);
+                }
+              }}
               onSubmit={async () => {
                 const nextMessage = await onSubmitSettings(settingsValues);
                 setMessage(nextMessage);

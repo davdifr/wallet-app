@@ -7,7 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getIncomeCategories } from "@/lib/categories/catalog";
+import {
+  getCategoriesForScope,
+  getFallbackCategory,
+  isValidCategorySlug
+} from "@/lib/categories/catalog";
 import { recurringIncomeSchema } from "@/lib/validations/recurring-income";
 import { cn } from "@/lib/utils";
 import type {
@@ -17,6 +21,7 @@ import type {
 
 const emptyValues: RecurringIncomeFormValues = {
   amount: "",
+  type: "income",
   category: "",
   categorySlug: "salary",
   description: "",
@@ -45,7 +50,7 @@ export function RecurringIncomeForm({
 }: RecurringIncomeFormProps) {
   const [values, setValues] = useState<RecurringIncomeFormValues>(emptyValues);
   const [state, setState] = useState<RecurringIncomeFormState>({ success: false });
-  const categoryOptions = getIncomeCategories();
+  const categoryOptions = getCategoriesForScope(values.type);
 
   return (
     <form
@@ -87,6 +92,33 @@ export function RecurringIncomeForm({
             }
           />
           <FieldError errors={state.errors?.amount} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="type">Tipo</Label>
+          <Select
+            id="type"
+            name="type"
+            value={values.type}
+            onChange={(event) =>
+              setValues((current) => {
+                const nextType = event.target.value === "expense" ? "expense" : "income";
+                const nextCategorySlug = isValidCategorySlug(current.categorySlug, nextType)
+                  ? current.categorySlug
+                  : getFallbackCategory(nextType).slug;
+
+                return {
+                  ...current,
+                  type: nextType,
+                  categorySlug: nextCategorySlug
+                };
+              })
+            }
+          >
+            <option value="income">Entrata</option>
+            <option value="expense">Spesa</option>
+          </Select>
+          <FieldError errors={state.errors?.type} />
         </div>
 
         <div className="space-y-2">
@@ -153,7 +185,11 @@ export function RecurringIncomeForm({
           <Input
             id="source"
             name="source"
-            placeholder="Datore, cliente, banca..."
+            placeholder={
+              values.type === "income"
+                ? "Datore, cliente, banca..."
+                : "Carta, banca, fornitore..."
+            }
             value={values.source}
             onChange={(event) =>
               setValues((current) => ({ ...current, source: event.target.value }))
@@ -168,7 +204,11 @@ export function RecurringIncomeForm({
         <Textarea
           id="description"
           name="description"
-          placeholder="Descrivi l'entrata ricorrente e come verra registrata"
+          placeholder={
+            values.type === "income"
+              ? "Descrivi la ricorrenza di entrata e come verra registrata"
+              : "Descrivi la ricorrenza di spesa e come verra registrata"
+          }
           className="min-h-24"
           value={values.description}
           onChange={(event) =>
@@ -221,7 +261,7 @@ export function RecurringIncomeForm({
       </div>
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Creazione in corso..." : "Crea entrata ricorrente"}
+        {isSubmitting ? "Creazione in corso..." : "Crea ricorrenza"}
       </Button>
     </form>
   );

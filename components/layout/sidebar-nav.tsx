@@ -25,7 +25,7 @@ export const navItems = [
   },
   {
     href: "/recurring-incomes",
-    label: "Entrate ricorrenti",
+    label: "Ricorrenze",
     mobileLabel: "Entrate",
     icon: Repeat
   },
