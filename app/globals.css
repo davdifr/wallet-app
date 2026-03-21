@@ -94,6 +94,16 @@
     padding-bottom: calc(var(--safe-area-bottom) + 1.25rem);
   }
 
+  .modal-sheet {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .modal-drag-handle {
+    touch-action: none;
+  }
+
   .ios-scroll {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
