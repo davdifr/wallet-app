@@ -25,7 +25,7 @@ describe("budget snapshot", () => {
     vi.clearAllMocks();
   });
 
-  it("include il saldo del salvadanaio nel patrimonio totale", async () => {
+  it("non somma due volte il saldo del salvadanaio nel patrimonio totale", async () => {
     const mockClient = {
       from: vi.fn((table: string) => {
         if (table === "transactions") {
@@ -129,7 +129,7 @@ describe("budget snapshot", () => {
 
     const snapshot = await getBudgetSnapshot(new Date("2026-03-15T12:00:00.000Z"));
 
-    expect(snapshot.totalWealth).toBe(1100);
+    expect(snapshot.totalWealth).toBe(800);
     expect(snapshot.piggyBankBalance).toBe(300);
     expect(snapshot.dailyBudget.blockedInPiggyBank).toBe(300);
   });

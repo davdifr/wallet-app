@@ -44,7 +44,7 @@ export function RecurringIncomesList({
               Nessuna ricorrenza configurata
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Crea la prima ricorrenza per iniziare a generare movimenti automatici.
+              Crea la prima ricorrenza di entrata o spesa per generare movimenti automatici.
             </p>
           </div>
         ) : (

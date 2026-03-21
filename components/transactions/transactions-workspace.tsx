@@ -10,7 +10,6 @@ import { TransactionsList } from "@/components/transactions/transactions-list";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { fetchJson } from "@/lib/query/fetch-json";
-import { invalidateDomainQueries } from "@/lib/query/invalidate-domain-cache";
 import { queryKeys } from "@/lib/query/query-keys";
 import { publishSyncEvent } from "@/lib/query/sync-events";
 import {
@@ -43,6 +42,10 @@ type TransactionsApiResponse = {
   categories: TransactionCategoryOption[];
   transactions: Transaction[];
 };
+
+type TransactionsQuerySnapshot = Array<
+  [ReadonlyArray<unknown>, TransactionsApiResponse | undefined]
+>;
 
 function buildTransactionsSearchParams(filters: TransactionFilters) {
   const searchParams = new URLSearchParams();
@@ -156,6 +159,18 @@ export function TransactionsWorkspace({
     }
   }
 
+  function getTransactionQuerySnapshots(): TransactionsQuerySnapshot {
+    return queryClient.getQueriesData<TransactionsApiResponse>({
+      queryKey: queryKeys.transactions.all
+    });
+  }
+
+  function restoreTransactionQuerySnapshots(snapshots: TransactionsQuerySnapshot) {
+    for (const [queryKey, cache] of snapshots) {
+      queryClient.setQueryData(queryKey, cache);
+    }
+  }
+
   async function refreshTransactions(nextFilters: TransactionFilters) {
     setListError(null);
     setFilters(nextFilters);
@@ -202,19 +217,27 @@ export function TransactionsWorkspace({
   }
 
   async function handleDelete(transactionId: string) {
+    const previousSnapshots = getTransactionQuerySnapshots();
+    const previousEditingTransaction = editingTransaction;
+
     setDeletingId(transactionId);
     setListError(null);
+    updateTransactionQueries((cache) => removeTransactionFromCache(cache, transactionId));
+
+    if (editingTransaction?.id === transactionId) {
+      setEditingTransaction(null);
+    }
 
     try {
       await deleteTransactionMutation.mutateAsync(transactionId);
-      updateTransactionQueries((cache) => removeTransactionFromCache(cache, transactionId));
-
-      if (editingTransaction?.id === transactionId) {
-        setEditingTransaction(null);
-      }
-
       await syncTransactionDomain();
     } catch (error) {
+      restoreTransactionQuerySnapshots(previousSnapshots);
+
+      if (previousEditingTransaction?.id === transactionId) {
+        setEditingTransaction(previousEditingTransaction);
+      }
+
       setListError(
         error instanceof Error
           ? error.message

@@ -26,7 +26,7 @@ export const navItems = [
   {
     href: "/recurring-incomes",
     label: "Ricorrenze",
-    mobileLabel: "Entrate",
+    mobileLabel: "Ricorr.",
     icon: Repeat
   },
   { href: "/saving-goals", label: "Obiettivi", mobileLabel: "Goals", icon: Target },

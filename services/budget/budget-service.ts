@@ -213,7 +213,7 @@ export async function getBudgetSnapshot(currentDate = new Date()): Promise<Budge
       }
 
       return sum;
-    }, piggyBankSummary.balance)
+    }, 0)
   );
 
   const spentThisMonth = roundCurrency(
